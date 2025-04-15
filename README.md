@@ -1,11 +1,11 @@
-# Devious WinRM
+# Devious-WinRM
 
 A Pentester's (work-in-progress) Powershell Client.
 
 ## Description / Purpose
 This tool allows one to access servers running WinRM or Powershell Remoting, with additional tools for capture the flag / pentesting. I created this project to fix a few grievances I have with existing tools (such as the amazing Evil-WinRM) and to contribute some to the open-source hacking community.
 
-Technically, Devious WinRM is not directly based on WinRM. It is instead built on the Powershell Remoting Protocol, which in turn uses WinRM. PSRP was chosen as it seems to require less user permissions than WinRM, at least in a rudementary Active Directory environment.
+Technically, Devious-WinRM is not directly based on WinRM. It is instead built on the Powershell Remoting Protocol, which in turn uses WinRM. PSRP was chosen as it seems to require less user permissions than WinRM, at least in a rudementary Active Directory environment.
 
 ## Features / Planned
 - [x] Connect to WinRM / PSRP hosts
