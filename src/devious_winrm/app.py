@@ -1,3 +1,4 @@
+from typing import Annotated
 from prompt_toolkit import PromptSession
 import psrp
 from psrp import WSManInfo
@@ -17,15 +18,15 @@ class Terminal:
             while True:
                 try:
                     current_dir = self.ps.add_script('pwd').invoke()
-                    user_input = self.session.prompt(str(current_dir[0]) + "> ")
+                    user_input: str = self.session.prompt(str(current_dir[0]) + "> ")
                    
-                    if user_input == 'exit':
-                        raise SystemExit                  
-                    
+                    if user_input.lower() == 'exit':
+                        break               
                     try:
                         self.run_command(user_input)
                     except Exception as e:
                         print(e)
+                        break
                     finally:
                         print()
                         self.ps._pipeline.metadata.commands = []
@@ -51,8 +52,23 @@ class Terminal:
             print(out[0].strip())
 
 
+def main(host: Annotated[str, typer.Argument()],
+        username: Annotated[str, typer.Option("-u", "--username")],
+        password: Annotated[str, typer.Option("-p", "--password")] = None,
+        port: Annotated[int, typer.Option("-P", "--port")] = 5985,
+        auth: Annotated[str, typer.Option("-a", "--auth")] = "negotiate",
+        nt_hash: Annotated[str, typer.Option("-H", "--hash")] = None):
+    
+    if password is None and nt_hash is None:
+        raise ValueError("Either password or NTLM hash must be provided.")
 
-def main(host, username: str, password: str, port: int = 5985, auth: str = 'ntlm'):
+    if nt_hash is not None:
+        if len(nt_hash) != 32:
+            raise ValueError("NTLM hash must be 32 characters long.")
+        if password is not None:
+            raise ValueError("Password and NTLM hash cannot be used together.")
+        password = "aad3b435b51404eeaad3b435b51404ee:" + nt_hash 
+    
     ''' Main function to run the terminal '''
     conn = WSManInfo(
         server=host,
@@ -62,7 +78,11 @@ def main(host, username: str, password: str, port: int = 5985, auth: str = 'ntlm
         auth=auth
     )
     terminal = Terminal(conn)
-    terminal.run()
+    try:
+        terminal.run()
+    except Exception as e:
+        print(e)
+        typer.Exit()
 
 if __name__ == '__main__':
     typer.run(main)
