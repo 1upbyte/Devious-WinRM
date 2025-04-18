@@ -24,3 +24,9 @@ devious_winrm = "devious_winrm.cli:app"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.ruff]
+select = ["ALL"]
+pyupgrade.keep-runtime-typing = true
+ignore = ["RUF013"]
+lint.pylint.allow-magic-value-types = ["int"]
