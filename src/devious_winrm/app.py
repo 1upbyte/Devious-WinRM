@@ -7,7 +7,8 @@ import typer
 from prompt_toolkit import PromptSession
 from prompt_toolkit import print_formatted_text as print_ft
 from psrp import WSManInfo
-from util.commands import commands, run_command
+
+from devious_winrm.util.commands import commands, run_command
 
 
 class Terminal:
@@ -37,6 +38,7 @@ class Terminal:
                         break
                     finally:
                         print_ft()
+                        # Clear the commands in the pipeline
                         self.ps._pipeline.metadata.commands = []  # noqa: SLF001
                 except (KeyboardInterrupt, EOFError, SystemExit):
                     print_ft("Goodbye!")
