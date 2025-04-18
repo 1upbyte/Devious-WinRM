@@ -10,7 +10,7 @@ Technically, Devious-WinRM is not directly based on WinRM. It is instead built o
 ## Features / Planned
 - [x] Connect to WinRM / PSRP hosts
 - [ ] Make it pretty
-- [ ] File upload/download
+- [x] File upload/download
 - [ ] In-Memory .NET/Powershell loader
 - [ ] No-config Kerberos auth
 - [x] Pass the hash support
