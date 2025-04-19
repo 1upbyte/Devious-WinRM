@@ -1,5 +1,8 @@
 """Devious WinRM."""
 
+import asyncio
+from typing import Optional
+
 import psrp
 import typer
 from prompt_toolkit import PromptSession
@@ -10,58 +13,60 @@ from devious_winrm.util.commands import commands, run_command
 
 
 class Terminal:
-    """Terminal class to handle the connection and command execution."""
+    """Async Terminal for handling connection and command execution."""
 
-    def __init__(self, conn: WSManInfo, ps: psrp.SyncPowerShell) -> None:
-        """Initialize the terminal with a connection object."""
+    def __init__(self, conn: WSManInfo, ps: psrp.AsyncPowerShell) -> None:
         self.session = PromptSession()
         self.conn = conn
         self.ps = ps
         self.error_count: int = 0
 
-    def run(self) -> None:
-        """Run the terminal and handle user input."""
+    async def run(self) -> None:
+        """Run the terminal event loop asynchronously."""
         while True:
-            current_dir = self.ps.add_script("pwd").invoke()
-            user_input: str = self.session.prompt(str(current_dir[0]) + "> ")
-            self.process_command(user_input)
+            current_dir = await self.ps.add_script("pwd").invoke()
+            user_input: str = await self.session.prompt_async(str(current_dir[0]) + "> ")
+            await self.process_command(user_input)
 
-    def process_command(self, user_input: str) -> None:
-        """Run a command in the terminal and print_ft the output."""
-        command: str = user_input.split(" ")[0]
+    async def process_command(self, user_input: str) -> None:
+        """Execute a command or run a registered action."""
+        command = user_input.split(" ")[0]
         if command in commands:
-            run_command(self, user_input)
+            await run_command(self, user_input)
             return
         try:
             self.ps.add_script(user_input)
             self.ps.add_command("Out-String")
-            out: str = self.ps.invoke()[0]
+            out_list = await self.ps.invoke()
 
-            # The pipeline only keeps track of total erros, not per command
-            # So we need to check if the error stream has changed
-            had_error: bool = len(self.ps.streams.error) > self.error_count
+            had_error = len(self.ps.streams.error) > self.error_count
             if had_error:
                 print_ft(str(self.ps.streams.error[-1]).strip())
                 self.error_count = len(self.ps.streams.error)
 
+            out = out_list[0] if out_list else ""
             if out:
                 print_ft(out.strip())
         except Exception as e:
             print_ft(e)
-            return
         finally:
             print_ft()
-            # Clear the commands in the pipeline
+            # Clear pipeline commands
             self.ps._pipeline.metadata.commands = []  # noqa: SLF001
 
 
+async def _async_main(conn: WSManInfo) -> None:
+    """Async entrypoint to initialize the pool and run the terminal."""
+    async with psrp.AsyncRunspacePool(conn) as rp:
+        ps = psrp.AsyncPowerShell(rp)
+        terminal = Terminal(conn, ps)
+        await terminal.run()
+
 
 def main(conn: WSManInfo) -> None:
-    """Run the terminal application."""
-    with psrp.SyncRunspacePool(conn) as rp:
-        ps = psrp.SyncPowerShell(rp)
-        terminal = Terminal(conn, ps)
-        terminal.run()
+    """Sync wrapper to run the async main via asyncio."""
+    asyncio.run(_async_main(conn))
+
 
 if __name__ == "__main__":
     typer.run(main)
