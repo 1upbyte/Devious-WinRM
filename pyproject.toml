@@ -29,4 +29,4 @@ build-backend = "hatchling.build"
 select = ["ALL"]
 pyupgrade.keep-runtime-typing = true
 ignore = ["RUF013"]
-lint.pylint.allow-magic-value-types = ["int"]
+lint.pylint.allow-magic-value-types = ["int", "str"]
