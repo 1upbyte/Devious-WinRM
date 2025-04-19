@@ -1,7 +1,5 @@
 """Devious WinRM."""
 
-from typing import Annotated
-
 import psrp
 import typer
 from prompt_toolkit import PromptSession
@@ -9,7 +7,6 @@ from prompt_toolkit import print_formatted_text as print_ft
 from psrp import WSManInfo
 
 from devious_winrm.util.commands import commands, run_command
-from devious_winrm.util.kerberos import prepare_kerberos
 
 
 class Terminal:
@@ -63,35 +60,8 @@ class Terminal:
             print_ft(out[0].strip())
 
 
-def main(host: Annotated[str, typer.Argument()],  # noqa: PLR0913
-        username: Annotated[str, typer.Option("-u", "--username")] = None,
-        password: Annotated[str, typer.Option("-p", "--password")] = None,
-        port: Annotated[int, typer.Option("-P", "--port")] = 5985,
-        auth: Annotated[str, typer.Option("-a", "--auth")] = "negotiate",
-        nt_hash: Annotated[str, typer.Option("-H", "--hash")] = None,
-        dc: Annotated[str, typer.Option("--dc", "--domain-controller")] = None) -> None:
-    """Parse command line arguments and runs the terminal."""
-    if nt_hash is not None:
-        if len(nt_hash) != 32:
-            error = "NTLM hash must be 32 characters long."
-            raise ValueError(error)
-        if password is not None:
-            error = "Password and NTLM hash cannot be used together."
-            raise ValueError(error)
-        if auth != "kerberos":
-            password = "aad3b435b51404eeaad3b435b51404ee:" + nt_hash
-    if auth == "kerberos":
-        dc = dc or host
-        prepare_kerberos(host, dc, username, password, nt_hash)
-
-    """ Main function to run the terminal """
-    conn = WSManInfo(
-        server=host,
-        username=username,
-        password=password,
-        port=port,
-        auth=auth,
-    )
+def main(conn: WSManInfo) -> None:
+    """Run the terminal application."""
     terminal = Terminal(conn)
     try:
         terminal.run()
