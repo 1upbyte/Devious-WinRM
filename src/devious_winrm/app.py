@@ -1,11 +1,10 @@
 """Devious WinRM."""
 
 import asyncio
-from typing import Optional
 
 import psrp
 import typer
-from prompt_toolkit import PromptSession
+from prompt_toolkit import ANSI, PromptSession
 from prompt_toolkit import print_formatted_text as print_ft
 from psrp import WSManInfo
 
@@ -16,6 +15,7 @@ class Terminal:
     """Async Terminal for handling connection and command execution."""
 
     def __init__(self, conn: WSManInfo, ps: psrp.AsyncPowerShell) -> None:
+        """Initialize the terminal with a connection and PowerShell session."""
         self.session = PromptSession()
         self.conn = conn
         self.ps = ps
@@ -24,8 +24,8 @@ class Terminal:
     async def run(self) -> None:
         """Run the terminal event loop asynchronously."""
         while True:
-            current_dir = await self.ps.add_script("pwd").invoke()
-            user_input: str = await self.session.prompt_async(str(current_dir[0]) + "> ")
+            current_dir: str = str((await self.ps.add_script("pwd").invoke())[0])
+            user_input: str = await self.session.prompt_async(current_dir + "> ")
             await self.process_command(user_input)
 
     async def process_command(self, user_input: str) -> None:
@@ -46,7 +46,7 @@ class Terminal:
 
             out = out_list[0] if out_list else ""
             if out:
-                print_ft(out.strip())
+                print_ft(ANSI(out.strip()))
         except Exception as e:
             print_ft(e)
         finally:
