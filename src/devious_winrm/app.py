@@ -4,7 +4,7 @@ import asyncio
 
 import psrp
 import typer
-from prompt_toolkit import ANSI, PromptSession
+from prompt_toolkit import ANSI, HTML, PromptSession
 from prompt_toolkit import print_formatted_text as print_ft
 from psrp import WSManInfo
 
@@ -41,7 +41,8 @@ class Terminal:
 
             had_error = len(self.ps.streams.error) > self.error_count
             if had_error:
-                print_ft(str(self.ps.streams.error[-1]).strip())
+                error_message = (str(self.ps.streams.error[-1]).strip())
+                print_ft(HTML(f"<ansired>{error_message}</ansired>"))
                 self.error_count = len(self.ps.streams.error)
 
             out = out_list[0] if out_list else ""
