@@ -5,7 +5,6 @@ import sys
 from typing import TYPE_CHECKING
 
 import psrp
-from prompt_toolkit import print_formatted_text as print_ft
 
 if TYPE_CHECKING:
     from devious_winrm.app import Terminal
@@ -55,27 +54,28 @@ async def run_command(self: Terminal, user_input: str) -> None:
     args: list[str] = input_array[1:] if len(input_array) > 1 else []
     try:
         await commands[cmd]["action"](self, args)
-        print_ft("")
     except KeyError:
-        print_ft(f"Command '{cmd}' not found. Type 'help' for a list of commands.")
+        self.print_error(
+            f"Command '{cmd}' not found. Type 'help' for a list of commands.",
+        )
 
 
 @register_command
 async def exit(self: Terminal, _args: str) -> None:  # noqa: A001
     """Exit the application."""
-    print_ft("Exiting the application...")
+    self.print_ft("Exiting the application...")
     try:
         await self.ps.close()
     except Exception as e:
-        print_ft(f"Error closing PowerShell session: {e}")
+        self.print_error(f"Error closing PowerShell session: {e}")
     sys.exit(0)
 
 @register_command
-async def help(_self: Terminal, _args: str) -> None:  # noqa: A001
+async def help(self: Terminal, _args: str) -> None:  # noqa: A001
     """Show help information."""
-    print_ft("Available commands:")
+    self.print_ft("Available commands:")
     for cmd, details in commands.items():
-        print_ft(f"{cmd}: {details['description']}")
+        self.print_ft(f"{cmd}: {details['description']}")
 
 @register_command
 async def upload(self: Terminal, args: list[str]) -> None:
@@ -86,14 +86,14 @@ async def upload(self: Terminal, args: list[str]) -> None:
     Large files may struggle to transfer.
     """
     if len(args) < 2:
-        print_ft("Usage: upload <local_path> <remote_path>")
+        self.print_ft("Usage: upload <local_path> <remote_path>")
         return
     local_path, remote_path = args[0], args[1]
     try:
         psrp.copy_file(self.conn, local_path, remote_path)
-        print_ft(f"Uploaded {local_path} to {remote_path}")
+        self.print_ft(f"Uploaded {local_path} to {remote_path}")
     except Exception as e:
-        print_ft(f"Failed to upload file: {e}")
+        self.print_error(f"Failed to upload file: {e}")
 
 @register_command
 async def download(self: Terminal, args: list[str]) -> None:
@@ -104,12 +104,12 @@ async def download(self: Terminal, args: list[str]) -> None:
     Large files may struggle to transfer.
     """
     if len(args) < 1:
-        print_ft("Usage: download <remote_path> [local_path]")
+        self.print_ft("Usage: download <remote_path> [local_path]")
         return
     remote_path = args[0]
     local_path = args[1] if len(args) > 1 else remote_path.split("\\")[-1]
     try:
         psrp.fetch_file(self.conn, remote_path, local_path)
-        print_ft(f"Downloaded {remote_path} to {local_path}")
+        self.print_ft(f"Downloaded {remote_path} to {local_path}")
     except Exception as e:
-        print_ft(f"Failed to download file: {e}")
+        self.print_error(f"Failed to download file: {e}")
