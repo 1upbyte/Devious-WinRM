@@ -5,10 +5,15 @@ import os
 from functools import partial
 
 import psrp
+from psrpcore.types import PSInvocationState
 import typer
 from prompt_toolkit import ANSI, HTML, PromptSession, print_formatted_text
+from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles import Style
+from prompt_toolkit.styles.pygments import style_from_pygments_cls
 from psrp import WSManInfo
+from pygments.lexers.shell import PowerShellLexer
+from pygments.styles import get_style_by_name
 
 from devious_winrm.util.commands import commands, run_command
 
@@ -31,6 +36,7 @@ class Terminal:
         self.print_ft = partial(print_formatted_text, style=self.style)
         self.print_error = lambda msg: self.print_ft(HTML(f"<error>{msg}</error>"))
         self.username: str = None
+        self.prompt_style = style_from_pygments_cls(get_style_by_name("monokai"))
 
     async def run(self) -> None:
         """Run the terminal event loop asynchronously."""
@@ -42,7 +48,8 @@ class Terminal:
             prompt: str = f"{prefix} {current_dir}"
             prompt: HTML = HTML(prompt)
             self.print_ft(prompt)
-            user_input: str = await self.session.prompt_async("> ")
+            user_input: str = await self.session.prompt_async(
+                "PS> ", lexer=PygmentsLexer(PowerShellLexer))
             await self.process_command(user_input)
 
     async def process_command(self, user_input: str) -> None:
@@ -66,7 +73,8 @@ class Terminal:
             if out:
                 self.print_ft(ANSI(out.strip()))
         except Exception as e:
-            self.print_ft(e)
+            self.print_error(e)
+            self.ps._pipeline.state = PSInvocationState.Completed  # noqa: SLF001
         finally:
             # Clear pipeline commands
             self.ps._pipeline.metadata.commands = []  # noqa: SLF001
