@@ -12,7 +12,7 @@ Technically, Devious-WinRM is not directly based on WinRM. It is instead built o
 - [ ] Make it pretty
 - [x] File upload/download
 - [ ] In-Memory .NET/Powershell loader
-- [ ] No-config Kerberos auth
+- [x] No-config Kerberos auth
 - [x] Pass the hash support
 - [ ] Local logon token upgrader via RunasCs 
 - [ ] Maybe: Full TTY upgrader via ConPtyShell
