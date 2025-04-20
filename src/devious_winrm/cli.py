@@ -53,25 +53,6 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: PLR0913
         port=port,
         auth=auth,
     )
-
-
-
-
-
-
-
-
-
-
-
-    conn = WSManInfo(
-        server=host,
-        username=username,
-        password=password,
-        port=port,
-        auth=auth,
-    )
-
     main(conn)
 
 app = typer.Typer()

@@ -1,10 +1,10 @@
 """File to define commands."""  # noqa: INP001
 from __future__ import annotations
 
-import sys
 from typing import TYPE_CHECKING
 
 import psrp
+import typer
 
 if TYPE_CHECKING:
     from devious_winrm.app import Terminal
@@ -64,11 +64,7 @@ async def run_command(self: Terminal, user_input: str) -> None:
 async def exit(self: Terminal, _args: str) -> None:  # noqa: A001
     """Exit the application."""
     self.print_ft("Exiting the application...")
-    try:
-        await self.ps.close()
-    except Exception as e:
-        self.print_error(f"Error closing PowerShell session: {e}")
-    sys.exit(0)
+    raise typer.Exit(0)
 
 @register_command
 async def help(self: Terminal, _args: str) -> None:  # noqa: A001
@@ -92,7 +88,7 @@ async def upload(self: Terminal, args: list[str]) -> None:
     try:
         psrp.copy_file(self.conn, local_path, remote_path)
         self.print_ft(f"Uploaded {local_path} to {remote_path}")
-    except Exception as e:
+    except psrp.PSRPError as e:
         self.print_error(f"Failed to upload file: {e}")
 
 @register_command
@@ -111,5 +107,5 @@ async def download(self: Terminal, args: list[str]) -> None:
     try:
         psrp.fetch_file(self.conn, remote_path, local_path)
         self.print_ft(f"Downloaded {remote_path} to {local_path}")
-    except Exception as e:
+    except psrp.PSRPError as e:
         self.print_error(f"Failed to download file: {e}")
