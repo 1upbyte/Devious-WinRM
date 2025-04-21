@@ -27,8 +27,8 @@ class Terminal:
         """Initialize the terminal with a connection and PowerShell session."""
         self.conn: WSManInfo = conn
         self.session: PromptSession = PromptSession()
+        self.rp: psrp.AsyncRunspacePool = None
         self.ps: psrp.AsyncPowerShell = None
-        self.error_count: int = 0
         self.style = Style.from_dict({
             "prefix": "#F1FA88 bold",
             "error": "#CD0000",
@@ -40,23 +40,25 @@ class Terminal:
         self.username: str = None
         self.prompt_style = style_from_pygments_cls(get_style_by_name("monokai"))
 
-    async def run(self, ps: psrp.AsyncPowerShell) -> None:
+    async def run(self, rp: psrp.AsyncRunspacePool) -> None:
         """Run the terminal event loop asynchronously."""
-        self.ps = ps
-        self.username = str((await self.ps.add_command("whoami").invoke())[0])
+        self.rp = rp
         while True:
+            self.ps = psrp.AsyncPowerShell(rp)
             current_dir: str = str((await self.ps.add_script("pwd").invoke())[0])
             current_dir = (f"<prefix>{current_dir}</prefix>")
             prefix: str = "<ansigreen></ansigreen>"
             prompt: str = f"{prefix} {current_dir}"
             prompt: HTML = HTML(prompt)
             self.print_ft(prompt)
+
             user_input: str = await self.session.prompt_async(
                 "PS> ", lexer=PygmentsLexer(PowerShellLexer))
             await self.process_command(user_input)
 
     async def process_command(self, user_input: str) -> None:
         """Execute a command or run a registered action."""
+        self.ps = psrp.AsyncPowerShell(self.rp)
         command = user_input.split(" ")[0]
         try:
             if command in commands:
@@ -67,11 +69,9 @@ class Terminal:
             self.ps.add_command("Out-String")
             out_list = await self.ps.invoke()
 
-            had_error = len(self.ps.streams.error) > self.error_count
-            if had_error:
+            if self.ps.had_errors:
                 error_message = (str(self.ps.streams.error[-1]).strip())
                 self.print_error(error_message)
-                self.error_count = len(self.ps.streams.error)
 
             out = out_list[0] if out_list else ""
             if out:
@@ -79,31 +79,37 @@ class Terminal:
         except psrp.PipelineFailed as e:
             self.print_error(e)
         finally:
-            # Reset pipeline state and clear commands
-            # I don't know of a better way to do this than
-            # modifying private attributes. - 1upbyte
-            self.ps._pipeline.state = PSInvocationState.NotStarted # noqa: SLF001
-            self.ps._pipeline.metadata.commands = [] # noqa: SLF001
+            await self.ps.close()
+
+async def keep_alive(rp: psrp.AsyncRunspacePool) -> None:
+    """Keep connection alive by sending a no-op command every 30 seconds."""
+    try:
+        while True:
+            if rp.is_available:
+                ps2 = psrp.AsyncPowerShell(rp)
+                ps2.add_script("") # No-op
+                done = asyncio.Event()
+                await ps2.invoke_async(completed=done.set)
+                await done.wait()
+                await ps2.close()
+            await asyncio.sleep(30)
+    except asyncio.CancelledError:
+        return
 
 
 async def _async_main(conn: WSManInfo) -> None:
     """Async entrypoint to initialize the pool and run the terminal."""
     terminal = Terminal(conn)
     try:
-        async with psrp.AsyncRunspacePool(conn) as rp:
-            ps = psrp.AsyncPowerShell(rp)
-            await terminal.run(ps)
+        async with psrp.AsyncRunspacePool(conn, max_runspaces=2) as rp:
+            # Needs to be stored so it is not garbage collected
+            keep_alive_task = set().add(asyncio.create_task(keep_alive(rp)))  # noqa: F841
+
+            await terminal.run(rp)
 
     # This error occurs on startup if the IP/host/port is unreachable
-    except httpcore.ConnectError as e:
+    except (httpcore.ConnectError, psrp.WSManHTTPError) as e:
         error = f"Connection error: {e}"
-        terminal.print_error(error)
-        raise typer.Exit(1) from e
-    except (
-        httpcore.ConnectionNotAvailable,
-        anyio.BrokenResourceError,
-        httpcore.ReadError) as e:
-        error = "Connection died (left alone too long)."
         terminal.print_error(error)
         raise typer.Exit(1) from e
 
