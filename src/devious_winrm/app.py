@@ -1,10 +1,11 @@
 """Devious WinRM."""
 
 import asyncio
+import datetime
 import os
+import shutil
 from functools import partial
 
-import anyio
 import httpcore
 import psrp
 import typer
@@ -13,7 +14,6 @@ from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles import Style
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
 from psrp import WSManInfo
-from psrpcore.types import PSInvocationState
 from pygments.lexers.shell import PowerShellLexer
 from pygments.styles import get_style_by_name
 
@@ -23,28 +23,48 @@ from devious_winrm.util.commands import commands, run_command
 class Terminal:
     """Async Terminal for handling connection and command execution."""
 
-    def __init__(self, conn: WSManInfo) -> None:
+    def __init__(self, conn: WSManInfo, rp: psrp.AsyncRunspacePool) -> None:
         """Initialize the terminal with a connection and PowerShell session."""
         self.conn: WSManInfo = conn
-        self.session: PromptSession = PromptSession()
-        self.rp: psrp.AsyncRunspacePool = None
+        self.rp: psrp.AsyncRunspacePool = rp
         self.ps: psrp.AsyncPowerShell = None
+
+        os.environ["PROMPT_TOOLKIT_COLOR_DEPTH"] = "ColorDepth.DEPTH_8_BIT"
+        self.prompt_style = style_from_pygments_cls(get_style_by_name("monokai"))
         self.style = Style.from_dict({
             "prefix": "#F1FA88 bold",
             "error": "#CD0000",
             "devious": "#1395c4",
         })
-        os.environ["PROMPT_TOOLKIT_COLOR_DEPTH"] = "ColorDepth.DEPTH_8_BIT"
+
         self.print_ft = partial(print_formatted_text, style=self.style)
         self.print_error = lambda msg: self.print_ft(HTML(f"<error>{msg}</error>"))
-        self.username: str = None
-        self.prompt_style = style_from_pygments_cls(get_style_by_name("monokai"))
 
-    async def run(self, rp: psrp.AsyncRunspacePool) -> None:
+        self.username: str = None
+
+        self.session = PromptSession(refresh_interval=1)
+
+    def bottom_toolbar(self) -> HTML:
+        """Generate the bottom toolbar for the terminal."""
+        columns, _ = shutil.get_terminal_size()
+        time_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # noqa: DTZ005
+        preamble = "😈 Devious-WinRM"
+        user = f"Username: {self.username}"
+        text = f"{preamble} - {user}(PADDING){time_str}"
+        padding = columns - len(text) + len("(PADDING)") - len("> ")
+
+        bottom_toolbar_text = text.replace("(PADDING)", " " * padding)
+
+        return HTML(f"<style fg='ansiblue'>{bottom_toolbar_text}</style>")
+
+    async def run(self) -> None:
         """Run the terminal event loop asynchronously."""
-        self.rp = rp
+        self.ps = psrp.AsyncPowerShell(self.rp)
+        self.username = str((await self.ps.add_script("whoami").invoke())[0])
+        self.session.bottom_toolbar = self.bottom_toolbar
+
         while True:
-            self.ps = psrp.AsyncPowerShell(rp)
+            self.ps = psrp.AsyncPowerShell(self.rp)
             current_dir: str = str((await self.ps.add_script("pwd").invoke())[0])
             current_dir = (f"<prefix>{current_dir}</prefix>")
             prefix: str = "<ansigreen></ansigreen>"
@@ -99,13 +119,12 @@ async def keep_alive(rp: psrp.AsyncRunspacePool) -> None:
 
 async def _async_main(conn: WSManInfo) -> None:
     """Async entrypoint to initialize the pool and run the terminal."""
-    terminal = Terminal(conn)
     try:
         async with psrp.AsyncRunspacePool(conn, max_runspaces=2) as rp:
             # Needs to be stored so it is not garbage collected
             keep_alive_task = set().add(asyncio.create_task(keep_alive(rp)))  # noqa: F841
-
-            await terminal.run(rp)
+            terminal: Terminal = Terminal(conn, rp)
+            await terminal.run()
 
     # This error occurs on startup if the IP/host/port is unreachable
     except (httpcore.ConnectError, psrp.WSManHTTPError) as e:
