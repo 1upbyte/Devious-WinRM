@@ -49,13 +49,14 @@ class Terminal:
         columns, _ = shutil.get_terminal_size()
         time_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # noqa: DTZ005
         preamble = "😈 Devious-WinRM"
-        user = f"Username: {self.username}"
-        text = f"{preamble} - {user}(PADDING){time_str}"
+        user = f"User: {self.username}"
+        text = f"{preamble} | {user}(PADDING){time_str}"
         padding = columns - len(text) + len("(PADDING)") - len("> ")
+        # All this is done so the padding changes based on the terminal size
+        # and the clock is always aligned to the right.
+        final_text = text.replace("(PADDING)", " " * padding)
 
-        bottom_toolbar_text = text.replace("(PADDING)", " " * padding)
-
-        return HTML(f"<style fg='ansiblue'>{bottom_toolbar_text}</style>")
+        return HTML(f"<style fg='ansiblue' bg='ansiwhite'>{final_text}</style>")
 
     async def run(self) -> None:
         """Run the terminal event loop asynchronously."""
