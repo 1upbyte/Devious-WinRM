@@ -65,17 +65,24 @@ class Terminal:
         self.session.bottom_toolbar = self.bottom_toolbar
 
         while True:
-            self.ps = psrp.AsyncPowerShell(self.rp)
-            current_dir: str = str((await self.ps.add_script("pwd").invoke())[0])
-            current_dir = (f"<prefix>{current_dir}</prefix>")
-            prefix: str = "<ansigreen></ansigreen>"
-            prompt: str = f"{prefix} {current_dir}"
-            prompt: HTML = HTML(prompt)
-            self.print_ft(prompt)
+            try:
+                user_input: str = await self.prompt_user()
+                await self.process_command(user_input)
+            except (EOFError, KeyboardInterrupt, asyncio.CancelledError):
+                continue
 
-            user_input: str = await self.session.prompt_async(
-                "PS> ", lexer=PygmentsLexer(PowerShellLexer))
-            await self.process_command(user_input)
+    async def prompt_user(self) -> str:
+        """Prompt the user for a command."""
+        self.ps = psrp.AsyncPowerShell(self.rp)
+        current_dir: str = str((await self.ps.add_script("pwd").invoke())[0])
+        current_dir = (f"<prefix>{current_dir}</prefix>")
+        prefix: str = "<ansigreen></ansigreen>"
+        prompt: str = f"{prefix} {current_dir}"
+        prompt: HTML = HTML(prompt)
+        self.print_ft(prompt)
+
+        return await self.session.prompt_async(
+            "PS> ", lexer=PygmentsLexer(PowerShellLexer))
 
     async def process_command(self, user_input: str) -> None:
         """Execute a command or run a registered action."""
