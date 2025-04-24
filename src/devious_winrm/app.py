@@ -37,7 +37,7 @@ class Terminal:
             "devious": "#1395c4",
         })
 
-        self.print_ft = partial(print_formatted_text, style=self.style)
+        self.print_ft: callable[str] = partial(print_formatted_text, style=self.style)
         self.print_error = lambda msg: self.print_ft(HTML(f"<error>{msg}</error>"))
 
         self.username: str = None
@@ -94,17 +94,21 @@ class Terminal:
                 return
 
             self.ps.add_script(user_input)
-            self.ps.add_command("Out-String")
-            out_list = await self.ps.invoke()
+            self.ps.add_command("Out-String").add_parameter("Stream", value=True)
+            out_stream: psrp.AsyncPSDataCollection = psrp.AsyncPSDataCollection()
 
+
+            async def printer(msg):
+                print(msg)
+            out_stream.data_added = printer
+
+            completed = asyncio.Event()
+            await self.ps.invoke_async(output_stream=out_stream, completed=completed.set)
+            await completed.wait()
             if self.ps.had_errors:
                 error_message = (str(self.ps.streams.error[-1]).strip())
                 self.print_error(error_message)
-
-            out = out_list[0] if out_list else ""
-            if out:
-                self.print_ft(ANSI(out.strip()))
-        except psrp.PipelineFailed as e:
+        except (psrp.PipelineFailed, psrp.PipelineStopped) as e:
             self.print_error(e)
         finally:
             await self.ps.close()
