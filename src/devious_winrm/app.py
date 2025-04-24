@@ -97,14 +97,11 @@ class Terminal:
             self.ps.add_command("Out-String").add_parameter("Stream", value=True)
             out_stream: psrp.AsyncPSDataCollection = psrp.AsyncPSDataCollection()
 
+            async def _printer(line: str) -> None:
+                self.print_ft(ANSI(line))
+            out_stream.data_added = _printer
 
-            async def printer(msg):
-                print(msg)
-            out_stream.data_added = printer
-
-            completed = asyncio.Event()
-            await self.ps.invoke_async(output_stream=out_stream, completed=completed.set)
-            await completed.wait()
+            await self.ps.invoke(output_stream=out_stream)
             if self.ps.had_errors:
                 error_message = (str(self.ps.streams.error[-1]).strip())
                 self.print_error(error_message)
