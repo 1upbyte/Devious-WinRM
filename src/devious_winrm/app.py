@@ -1,17 +1,19 @@
 """Main file for the Devious-WinRM."""
 from __future__ import annotations
 
+import contextlib
 import re
 import sys
-from datetime import time
+import threading
+import time
 
 import psrp
-import psrpcore
 from prompt_toolkit import ANSI, HTML, PromptSession, print_formatted_text
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles import Style
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
 from psrp import WSManInfo
+from psrpcore.types import ErrorRecord, PSInvocationState, PSString
 from pygments.lexers.shell import PowerShellLexer
 from pygments.styles import get_style_by_name
 
@@ -50,24 +52,32 @@ class Terminal:
 
     def process_input(self, user_input: str) -> None:
         """Execute a command or run a registered action."""
-        if user_input in commands:
-            run_command(self, user_input)
-            return
-        self.ps = psrp.SyncPowerShell(self.rp)
-        self.ps.add_script(user_input)
-        self.ps.add_command("Out-String").add_parameter("Stream", value=True)
 
-        output = psrp.SyncPSDataCollection()
-        output.data_added = self.print_ft
-        self.ps.streams.error.data_added = self.print_error
-        self.ps.invoke(output_stream=output)
-        while self.ps.state == psrpcore.types.PSInvocationState.Running:
-            pass
+        def _process_input_logic() -> None:
+            """Logic to process user input and execute commands."""
+            if user_input in commands:
+                run_command(self, user_input)
+                return
+            self.ps = psrp.SyncPowerShell(self.rp)
+            self.ps.add_script(user_input)
+            self.ps.add_command("Out-String").add_parameter("Stream", value=True)
 
-    def print_ft(self, message: str | psrpcore.types.PSString) -> None:
+            output = psrp.SyncPSDataCollection()
+            output.data_added = self.print_ft
+            self.ps.streams.error.data_added = self.print_error
+            with contextlib.suppress(psrp.PipelineStopped):
+                self.ps.invoke(output_stream=output)
+
+        thread = threading.Thread(target=_process_input_logic)
+        thread.start()
+        print(self.ps.state)
+        while self.ps.state in (PSInvocationState.Running, PSInvocationState.NotStarted):
+                time.sleep(0.1)
+
+    def print_ft(self, message: str | PSString) -> None:
         """Print formatted text to the terminal."""
         print_formatted_text(ANSI(message))
-    def print_error(self, message: psrpcore.types.ErrorRecord) -> None:
+    def print_error(self, message: ErrorRecord) -> None:
         """Print an error message to the terminal."""
         message = str(message)
         # Check if the message already contains ANSI color codes
