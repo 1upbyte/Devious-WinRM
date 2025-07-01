@@ -1,4 +1,4 @@
-"""File to define commands."""  # noqa: INP001
+"""File to define commands."""
 from __future__ import annotations
 
 import sys

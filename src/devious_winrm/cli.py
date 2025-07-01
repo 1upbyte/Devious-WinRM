@@ -60,6 +60,7 @@ def cli() -> None:
     )
 
     try:
+        global terminal
         terminal = Terminal(conn)
         with SyncRunspacePool(conn) as rp:
             terminal.run(rp)

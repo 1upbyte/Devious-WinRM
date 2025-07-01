@@ -1,4 +1,4 @@
-"""Utility functions for Kerberos authentication."""  # noqa: INP001
+"""Utility functions for Kerberos authentication."""
 import os
 import tempfile
 from textwrap import dedent

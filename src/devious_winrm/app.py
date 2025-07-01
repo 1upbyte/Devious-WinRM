@@ -1,5 +1,7 @@
 """Main file for the Devious-WinRM."""
+from __future__ import annotations
 
+import re
 import sys
 from datetime import time
 
@@ -14,6 +16,9 @@ from pygments.lexers.shell import PowerShellLexer
 from pygments.styles import get_style_by_name
 
 from devious_winrm.util.commands import commands, run_command
+
+ANSI_RED = "\033[31m"
+ANSI_RESET = "\033[0m"
 
 
 class Terminal:
@@ -34,7 +39,11 @@ class Terminal:
         self.rp = rp
         while True:
             user_input = self.prompt().strip()
-            self.process_input(user_input)
+            try:
+                self.process_input(user_input)
+            except KeyboardInterrupt:
+                self.print_error("[-] Caught Ctrl+C. Stopping current command...")
+                self.ps.stop()
 
 
 
@@ -50,13 +59,21 @@ class Terminal:
 
         output = psrp.SyncPSDataCollection()
         output.data_added = self.print_ft
-        self.ps.streams.error.data_added = self.print_ft
+        self.ps.streams.error.data_added = self.print_error
         self.ps.invoke(output_stream=output)
         while self.ps.state == psrpcore.types.PSInvocationState.Running:
             pass
-    def print_ft(self, message: str) -> None:
+
+    def print_ft(self, message: str | psrpcore.types.PSString) -> None:
         """Print formatted text to the terminal."""
-        print_formatted_text(message)
+        print_formatted_text(ANSI(message))
+    def print_error(self, message: psrpcore.types.ErrorRecord) -> None:
+        """Print an error message to the terminal."""
+        message = str(message)
+        # Check if the message already contains ANSI color codes
+        if not re.search(r"\x1b\[[0-9;]*m", message):
+            message = f"{ANSI_RED}{message}{ANSI_RESET}"
+        self.print_ft(message)
 
     def prompt(self) -> str:
         """Prompt the user for input.
