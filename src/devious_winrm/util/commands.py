@@ -12,7 +12,7 @@ from typing import Callable
 
 commands = {}
 
-def register_command(func: Callable) -> Callable:
+def command(func: Callable) -> Callable:
     """Automatically registers a command using its docstring.
 
     This decorator adds the decorated function to the `commands` dictionary,
@@ -60,20 +60,20 @@ def run_command(self: Terminal, user_input: str) -> None:
         )
 
 
-@register_command
+@command
 def exit(self: Terminal, _args: str) -> None:  # noqa: A001
     """Exit the application."""
     self.print_ft("Exiting the application...")
     sys.exit(0)
 
-@register_command
+@command
 def help(self: Terminal, _args: str) -> None:  # noqa: A001
     """Show help information."""
     self.print_ft("Available commands:")
     for cmd, details in commands.items():
         self.print_ft(f"{cmd}: {details['description']}")
 
-@register_command
+@command
 def upload(self: Terminal, args: list[str]) -> None:
     """Upload a file.
 
@@ -91,7 +91,7 @@ def upload(self: Terminal, args: list[str]) -> None:
     except psrp.PSRPError as e:
         self.print_error(f"Failed to upload file: {e}")
 
-@register_command
+@command
 def download(self: Terminal, args: list[str]) -> None:
     """Download a file.
 
