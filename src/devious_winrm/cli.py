@@ -1,51 +1,58 @@
 """Entry point for the CLI application."""
 from typing import Annotated, Optional
 
-import typer
 from psrp import WSManInfo
 
 from devious_winrm.app import main
 from devious_winrm.util.kerberos import prepare_kerberos
+import argparse
 
 LM_HASH: str = "aad3b435b51404eeaad3b435b51404ee"
 
-def cli(host: Annotated[str, typer.Argument()],  # noqa: PLR0913
-        username: Annotated[str, typer.Option("-u", "--username")] = None,
-        password: Annotated[str, typer.Option("-p", "--password")] = None,
-        port: Annotated[int, typer.Option("-P", "--port")] = 5985,
-        auth: Annotated[str, typer.Option("-a", "--auth")] = "ntlm",
-        nt_hash: Annotated[str, typer.Option("-H", "--hash")] = None,
-        dc: Annotated[Optional[str], typer.Option("--dc", "--domain-controller")]=None,
-) -> None:
-    """Parse command line arguments and forward them to the terminal."""
-    if auth not in ["basic", "certificate", "credssp", "kerberos", "negotiate", "ntlm"]:
-        error = ("Invalid authentication method. Choose from: basic, certificate, "
-        "credssp, kerberos, negotiate, ntlm.")
-        raise typer.BadParameter(error)
+def cli() -> None:
+    """Manage CLI arguments."""
+
+    print("""
+-- Devious WinRM CLI --
+    """)
+    parser = argparse.ArgumentParser(description="Devious WinRM CLI")
+    parser.add_argument("host", help="Target host")
+    parser.add_argument("-u", "--username", help="Username", default=None)
+    parser.add_argument("-p", "--password", help="Password", default=None)
+    parser.add_argument("-P", "--port", type=int, help="Port", default=5985)
+    parser.add_argument("-a", "--auth", help="Authentication method", default="ntlm",
+                        choices=["basic", "certificate", "credssp", "kerberos", "negotiate", "ntlm"])
+    parser.add_argument("-H", "--hash", dest="nt_hash", help="NTLM hash", default=None)
+    parser.add_argument("--dc", "--domain-controller", dest="dc", help="Domain controller (FQDN)", default=None)
+
+    args = parser.parse_args()
+
+    host = args.host
+    username = args.username
+    password = args.password
+    port = args.port
+    auth = args.auth
+    nt_hash = args.nt_hash
+    dc = args.dc
 
     if nt_hash is not None:
-        if ":" in nt_hash: # In case user provides lm_hash:nt_hash
+        if ":" in nt_hash:  # In case user provides lm_hash:nt_hash
             nt_hash = nt_hash.split(":")[1]
         if len(nt_hash) != 32:
-            error = "NTLM hash must be 32 characters long."
-            raise typer.BadParameter(error)
+            parser.error("NTLM hash must be 32 characters long.")
         if password is not None:
-            error = "Password and NTLM hash cannot be used together."
-            raise ValueError(error)
+            parser.error("Password and NTLM hash cannot be used together.")
         if auth != "kerberos":
             password = f"{LM_HASH}:{nt_hash}"
 
     if dc is not None and dc.count(".") < 2:
-        error = "Please specify the FQDN of the domain controller (dc.example.com)."
-        raise typer.BadParameter(error)
+        parser.error("Please specify the FQDN of the domain controller (dc.example.com).")
 
     if auth == "kerberos":
         if not dc:
-            error = "Domain controller must be specified when using Kerberos."
-            raise typer.BadParameter(error)
+            parser.error("Domain controller must be specified when using Kerberos.")
         prepare_kerberos(dc, username, password, nt_hash)
 
-    """ Main function to run the terminal """
     conn = WSManInfo(
         server=host,
         username=username,
@@ -55,8 +62,9 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: PLR0913
     )
     main(conn)
 
-app = typer.Typer()
-app.command()(cli)
+def app() -> None:
+    """CLI entry point."""
+    cli()
 
 if __name__ == "__main__":
     app()

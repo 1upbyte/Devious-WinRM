@@ -5,10 +5,10 @@ import datetime
 import os
 import shutil
 from functools import partial
+import sys
 
 import httpcore
 import psrp
-import typer
 from prompt_toolkit import ANSI, HTML, PromptSession, print_formatted_text
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles import Style
@@ -139,13 +139,9 @@ async def _async_main(conn: WSManInfo) -> None:
     except (httpcore.ConnectError, psrp.WSManHTTPError) as e:
         error = f"Connection error: {e}"
         terminal.print_error(error)
-        raise typer.Exit(1) from e
+        sys.exit(1)
 
 
 def main(conn: WSManInfo) -> None:
     """Sync wrapper to run the async main via asyncio."""
     asyncio.run(_async_main(conn))
-
-
-if __name__ == "__main__":
-    typer.run(main)
