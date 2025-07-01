@@ -32,7 +32,7 @@ def register_command(func: Callable) -> Callable:
     }
     return func
 
-async def run_command(self: Terminal, user_input: str) -> None:
+def run_command(self: Terminal, user_input: str) -> None:
     """Run a command by looking it up in the dictionary and invoking its action.
 
     Args:
@@ -53,7 +53,7 @@ async def run_command(self: Terminal, user_input: str) -> None:
     cmd: str = user_input.split(" ")[0]
     args: list[str] = input_array[1:] if len(input_array) > 1 else []
     try:
-        await commands[cmd]["action"](self, args)
+        commands[cmd]["action"](self, args)
     except KeyError:
         self.print_error(
             f"Command '{cmd}' not found. Type 'help' for a list of commands.",
@@ -61,20 +61,20 @@ async def run_command(self: Terminal, user_input: str) -> None:
 
 
 @register_command
-async def exit(self: Terminal, _args: str) -> None:  # noqa: A001
+def exit(self: Terminal, _args: str) -> None:  # noqa: A001
     """Exit the application."""
     self.print_ft("Exiting the application...")
     sys.exit(0)
 
 @register_command
-async def help(self: Terminal, _args: str) -> None:  # noqa: A001
+def help(self: Terminal, _args: str) -> None:  # noqa: A001
     """Show help information."""
     self.print_ft("Available commands:")
     for cmd, details in commands.items():
         self.print_ft(f"{cmd}: {details['description']}")
 
 @register_command
-async def upload(self: Terminal, args: list[str]) -> None:
+def upload(self: Terminal, args: list[str]) -> None:
     """Upload a file.
 
     Usage: upload <local_path> <remote_path>.
@@ -92,7 +92,7 @@ async def upload(self: Terminal, args: list[str]) -> None:
         self.print_error(f"Failed to upload file: {e}")
 
 @register_command
-async def download(self: Terminal, args: list[str]) -> None:
+def download(self: Terminal, args: list[str]) -> None:
     """Download a file.
 
     Usage: download <remote_path> [local_path].

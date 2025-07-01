@@ -1,17 +1,15 @@
 """Entry point for the CLI application."""
-from typing import Annotated, Optional
-
-from psrp import WSManInfo
-
-from devious_winrm.app import main
-from devious_winrm.util.kerberos import prepare_kerberos
 import argparse
+
+from psrp import SyncRunspacePool, WSManInfo
+
+from devious_winrm.app import Terminal
+from devious_winrm.util.kerberos import prepare_kerberos
 
 LM_HASH: str = "aad3b435b51404eeaad3b435b51404ee"
 
 def cli() -> None:
     """Manage CLI arguments."""
-
     print("""
 -- Devious WinRM CLI --
     """)
@@ -60,11 +58,15 @@ def cli() -> None:
         port=port,
         auth=auth,
     )
-    main(conn)
 
-def app() -> None:
-    """CLI entry point."""
-    cli()
+    try:
+        terminal = Terminal(conn)
+        with SyncRunspacePool(conn) as rp:
+            terminal.run(rp)
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        print("Exiting the application...")
+        parser.exit(1)
 
 if __name__ == "__main__":
-    app()
+    cli()

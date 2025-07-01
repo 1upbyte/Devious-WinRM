@@ -15,11 +15,11 @@ dependencies = [
 ]
 
 [project.scripts]
-devious-winrm = "devious_winrm.cli:app"
-dwrm = "devious_winrm.cli:app"
+devious-winrm = "devious_winrm.cli:cli"
+dwrm = "devious_winrm.cli:cli"
 
 [project.entry-points."pipx.run"]
-devious_winrm = "devious_winrm.cli:app"
+devious_winrm = "devious_winrm.cli:cli"
 
 [build-system]
 requires = ["hatchling"]
