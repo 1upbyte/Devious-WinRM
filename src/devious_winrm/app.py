@@ -46,18 +46,21 @@ class Terminal:
             except KeyboardInterrupt:
                 self.print_error("[-] Caught Ctrl+C. Stopping current command...")
                 self.ps.stop()
+            except SystemExit:
+                self.print_error("[-] Exiting the application...")
+                return
 
 
 
 
     def process_input(self, user_input: str) -> None:
         """Execute a command or run a registered action."""
+        if user_input in commands:
+            run_command(self, user_input)
+            return
 
         def _process_input_logic() -> None:
             """Logic to process user input and execute commands."""
-            if user_input in commands:
-                run_command(self, user_input)
-                return
             self.ps = psrp.SyncPowerShell(self.rp)
             self.ps.add_script(user_input)
             self.ps.add_command("Out-String").add_parameter("Stream", value=True)

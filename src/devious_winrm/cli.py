@@ -1,10 +1,12 @@
 """Entry point for the CLI application."""
 import argparse
+import threading
 
 from psrp import SyncRunspacePool, WSManInfo
 
 from devious_winrm.app import Terminal
 from devious_winrm.util.kerberos import prepare_kerberos
+import sys
 
 LM_HASH: str = "aad3b435b51404eeaad3b435b51404ee"
 
@@ -64,10 +66,7 @@ def cli() -> None:
         terminal = Terminal(conn)
         with SyncRunspacePool(conn) as rp:
             terminal.run(rp)
-    except FileNotFoundError as e:
-        print(f"Error: {e}")
-        print("Exiting the application...")
-        parser.exit(1)
-
+    except Exception as e:
+        print(f"An error occurred: {e}")
 if __name__ == "__main__":
     cli()
