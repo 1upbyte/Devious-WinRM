@@ -5,12 +5,10 @@ import contextlib
 import re
 import sys
 import threading
-import time
 
 import psrp
 from prompt_toolkit import ANSI, HTML, PromptSession, print_formatted_text
 from prompt_toolkit.lexers import PygmentsLexer
-from prompt_toolkit.styles import Style
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
 from psrp import WSManInfo
 from psrpcore.types import ErrorRecord, PSInvocationState, PSString
@@ -20,6 +18,7 @@ from pygments.styles import get_style_by_name
 from devious_winrm.util.commands import commands, run_command
 
 ANSI_RED = "\033[31m"
+ANSI_BLUE = "\033[34m"
 ANSI_RESET = "\033[0m"
 
 
@@ -40,15 +39,18 @@ class Terminal:
         """Run the terminal session."""
         self.rp = rp
         while True:
-            user_input = self.prompt().strip()
             try:
+                user_input = self.prompt().strip()
                 self.process_input(user_input)
+            except (SystemExit, EOFError):
+                self.print_info("Exiting the application...")
+                sys.exit(0)
             except KeyboardInterrupt:
-                self.print_error("[-] Caught Ctrl+C. Stopping current command...")
-                self.ps.stop()
-            except SystemExit:
-                self.print_error("[-] Exiting the application...")
-                return
+                if self.ps.state == PSInvocationState.Running:
+                    self.print_info("Aborting command.")
+                    self.ps.stop()
+            except Exception:
+                raise
 
 
 
@@ -69,17 +71,16 @@ class Terminal:
             output.data_added = self.print_ft
             self.ps.streams.error.data_added = self.print_error
             with contextlib.suppress(psrp.PipelineStopped):
-                self.ps.invoke(output_stream=output)
-
-        thread = threading.Thread(target=_process_input_logic)
+                    self.ps.invoke(output_stream=output)
+        thread = threading.Thread(target=_process_input_logic, daemon=True)
         thread.start()
-        print(self.ps.state)
-        while self.ps.state in (PSInvocationState.Running, PSInvocationState.NotStarted):
-                time.sleep(0.1)
+        while thread.is_alive():
+            thread.join(timeout=0.5)
 
     def print_ft(self, message: str | PSString) -> None:
         """Print formatted text to the terminal."""
         print_formatted_text(ANSI(message))
+
     def print_error(self, message: ErrorRecord) -> None:
         """Print an error message to the terminal."""
         message = str(message)
@@ -88,6 +89,10 @@ class Terminal:
             message = f"{ANSI_RED}{message}{ANSI_RESET}"
         self.print_ft(message)
 
+    def print_info(self, message: str) -> None:
+        """Print an informational message to the terminal."""
+        self.print_ft(f"{ANSI_BLUE}[+] {message}{ANSI_RESET}")
+
     def prompt(self) -> str:
         """Prompt the user for input.
 
@@ -95,5 +100,5 @@ class Terminal:
         """
         self.ps = psrp.SyncPowerShell(self.rp)
         cwd: str = self.ps.add_script("pwd").invoke()[0]
-        prefix = f"{cwd} > "
+        prefix = f"{cwd}> "
         return self.session.prompt(HTML(f"{prefix}"))

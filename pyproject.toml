@@ -11,15 +11,16 @@ dependencies = [
     "prompt_toolkit==3.0.5",
     "pypsrp[kerberos]>=1.0.0b1,<1.1.0",
     "impacket==0.12.0",
-    "Pygments==2.19.1"
+    "Pygments==2.19.1",
+    "rich==14.0.0"
 ]
 
 [project.scripts]
-devious-winrm = "devious_winrm.cli:cli"
-dwrm = "devious_winrm.cli:cli"
+devious-winrm = "devious_winrm.cli:app"
+dwrm = "devious_winrm.cli:app"
 
 [project.entry-points."pipx.run"]
-devious_winrm = "devious_winrm.cli:cli"
+devious_winrm = "devious_winrm.cli:app"
 
 [build-system]
 requires = ["hatchling"]

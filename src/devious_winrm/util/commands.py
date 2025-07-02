@@ -61,17 +61,16 @@ def run_command(self: Terminal, user_input: str) -> None:
 
 
 @command
-def exit(self: Terminal, _args: str) -> None:  # noqa: A001
+def exit(_self: Terminal, _args: str) -> None:  # noqa: A001
     """Exit the application."""
-    self.print_ft("Exiting the application...")
     sys.exit(0)
 
 @command
 def help(self: Terminal, _args: str) -> None:  # noqa: A001
     """Show help information."""
-    self.print_ft("Available commands:")
+    self.print_info("Available commands:")
     for cmd, details in commands.items():
-        self.print_ft(f"{cmd}: {details['description']}")
+        self.print_info(f"{cmd}: {details['description']}")
 
 @command
 def upload(self: Terminal, args: list[str]) -> None:
