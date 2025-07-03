@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import contextlib
+import datetime
 import random
 import re
+import shutil
 import sys
 import threading
 import time
@@ -18,6 +20,7 @@ from pygments.lexers.shell import PowerShellLexer
 from pygments.styles import get_style_by_name
 
 from devious_winrm.util.commands import commands, run_command
+from devious_winrm.util.get_command_output import get_command_output
 
 ANSI_RED = "\033[31m"
 ANSI_BLUE = "\033[34m"
@@ -32,6 +35,7 @@ class Terminal:
         self.conn = conn
         self.rp = None
         self.ps = None
+        self.username = None
         self.session = PromptSession(
             lexer=PygmentsLexer(PowerShellLexer),
             style=style_from_pygments_cls(get_style_by_name("monokai")),
@@ -42,6 +46,7 @@ class Terminal:
     def run(self, rp: psrp.SyncRunspacePool) -> None:
         """Run the terminal session."""
         self.rp = rp
+        self.username = get_command_output(self.rp, "whoami")
         threading.Thread(target=self.keepalive, daemon=True).start()
         while True:
             try:
@@ -57,10 +62,19 @@ class Terminal:
             except Exception:
                 raise
 
-    def bottom_toolbar(self) -> str:
-        """Keep the connection alive by sending a simple command."""
-        state = str(self.rp.state) if self.ps else "No active PowerShell session."
-        return state + " " +  str(random.randint(1, 1000))
+    def bottom_toolbar(self) -> HTML:
+        """Generate the bottom toolbar for the terminal."""
+        columns, _ = shutil.get_terminal_size()
+        time_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # noqa: DTZ005
+        preamble = "😈 Devious-WinRM"
+        user = f"User: {self.username}"
+        text = f"{preamble} | {user}(PADDING){time_str}"
+        padding = columns - len(text) + len("(PADDING)") - len("> ")
+        # All this is done so the padding changes based on the terminal size
+        # and the clock is always aligned to the right.
+        final_text = text.replace("(PADDING)", " " * padding)
+
+        return HTML(f"<style fg='ansiblue' bg='ansiwhite'>{final_text}</style>")
 
 
     def process_input(self, user_input: str) -> None:
@@ -107,7 +121,7 @@ class Terminal:
         Returns the user input as a string.
         """
         self.ps = psrp.SyncPowerShell(self.rp)
-        cwd: str = self.ps.add_script("pwd").invoke()[0]
+        cwd: str = get_command_output(self.rp, "pwd")
         prefix = f"{cwd}> "
         return self.session.prompt(HTML(f"{prefix}"))
 
