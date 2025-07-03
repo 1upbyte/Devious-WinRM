@@ -42,6 +42,7 @@ class Terminal:
     def run(self, rp: psrp.SyncRunspacePool) -> None:
         """Run the terminal session."""
         self.rp = rp
+        threading.Thread(target=self.keepalive, daemon=True).start()
         while True:
             try:
                 user_input = self.prompt().strip()
