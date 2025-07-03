@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import contextlib
+import random
 import re
 import sys
 import threading
+import time
 
 import psrp
 from prompt_toolkit import ANSI, HTML, PromptSession, print_formatted_text
@@ -33,6 +35,8 @@ class Terminal:
         self.session = PromptSession(
             lexer=PygmentsLexer(PowerShellLexer),
             style=style_from_pygments_cls(get_style_by_name("monokai")),
+            bottom_toolbar=self.bottom_toolbar,
+            refresh_interval=1,
         )
 
     def run(self, rp: psrp.SyncRunspacePool) -> None:
@@ -52,7 +56,10 @@ class Terminal:
             except Exception:
                 raise
 
-
+    def bottom_toolbar(self) -> str:
+        """Keep the connection alive by sending a simple command."""
+        state = str(self.rp.state) if self.ps else "No active PowerShell session."
+        return state + " " +  str(random.randint(1, 1000))
 
 
     def process_input(self, user_input: str) -> None:
@@ -102,3 +109,10 @@ class Terminal:
         cwd: str = self.ps.add_script("pwd").invoke()[0]
         prefix = f"{cwd}> "
         return self.session.prompt(HTML(f"{prefix}"))
+
+    def keepalive(self) -> None:
+        """Keep the connection alive by sending a repeat no-op command."""
+        while True:
+            ps = psrp.SyncPowerShell(self.rp)
+            ps.add_script("").invoke()
+            time.sleep(60)

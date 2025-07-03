@@ -1,11 +1,9 @@
 """Entry point for the CLI application."""
-import os
 from typing import Annotated, Optional
 
 import httpcore
 import psrp
 import typer
-from click import UsageError
 from psrp import SyncRunspacePool, WSManInfo
 
 from devious_winrm.app import Terminal
@@ -13,7 +11,7 @@ from devious_winrm.util.kerberos import prepare_kerberos
 
 LM_HASH: str = "aad3b435b51404eeaad3b435b51404ee"
 
-def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
+def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0913
         username: Annotated[str, typer.Option("-u", "--username")] = None,
         password: Annotated[str, typer.Option("-p", "--password")] = None,
         port: Annotated[int, typer.Option("-P", "--port")] = 5985,
@@ -61,18 +59,15 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
         terminal = Terminal(conn)
         with SyncRunspacePool(conn) as rp:
             terminal.run(rp)
-    except psrp.WSManAuthenticationError as err:
+    except psrp.WSManAuthenticationError:
         error = "Authentication failed. Please check your credentials and try again."
-        raise UsageError(error) from err
-    except httpcore.ReadError as err:
+        terminal.print_error(error)
+    except httpcore.ReadError:
         error = "Connection timed out."
-        raise UsageError(error) from err
-    except Exception as err:
-        error = f"An unexpected error occurred: {err.__class__}"
-        raise UsageError(error) from err
-    finally:
-        os._exit(0)
-
+        terminal.print_error(error)
+    except Exception as err:  # noqa: BLE001
+        error = f"An unexpected error occurred: {err}"
+        terminal.print_error(error)
 
 app = typer.Typer()
 app.command()(cli)
