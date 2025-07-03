@@ -3,28 +3,23 @@ from __future__ import annotations
 
 import contextlib
 import datetime
-import random
-import re
 import shutil
 import sys
 import threading
 import time
 
 import psrp
-from prompt_toolkit import ANSI, HTML, PromptSession, print_formatted_text
+from prompt_toolkit import HTML, PromptSession
 from prompt_toolkit.lexers import PygmentsLexer
 from prompt_toolkit.styles.pygments import style_from_pygments_cls
 from psrp import WSManInfo
-from psrpcore.types import ErrorRecord, PSInvocationState, PSString
+from psrpcore.types import PSInvocationState
 from pygments.lexers.shell import PowerShellLexer
 from pygments.styles import get_style_by_name
 
 from devious_winrm.util.commands import commands, run_command
 from devious_winrm.util.get_command_output import get_command_output
-
-ANSI_RED = "\033[31m"
-ANSI_BLUE = "\033[34m"
-ANSI_RESET = "\033[0m"
+from devious_winrm.util.printers import print_error, print_ft, print_info
 
 
 class Terminal:
@@ -53,11 +48,11 @@ class Terminal:
                 user_input = self.prompt().strip()
                 self.process_input(user_input)
             except (SystemExit, EOFError):
-                self.print_info("Exiting the application...")
+                print_info("Exiting the application...")
                 sys.exit(0)
             except KeyboardInterrupt:
                 if self.ps.state == PSInvocationState.Running:
-                    self.print_info("Aborting command.")
+                    print_info("Aborting command.")
                     self.ps.stop()
             except Exception:
                 raise
@@ -90,30 +85,14 @@ class Terminal:
             self.ps.add_command("Out-String").add_parameter("Stream", value=True)
 
             output = psrp.SyncPSDataCollection()
-            output.data_added = self.print_ft
-            self.ps.streams.error.data_added = self.print_error
+            output.data_added = print_ft
+            self.ps.streams.error.data_added = print_error
             with contextlib.suppress(psrp.PipelineStopped):
                     self.ps.invoke(output_stream=output)
         thread = threading.Thread(target=_process_input_logic, daemon=True)
         thread.start()
         while thread.is_alive():
             thread.join(timeout=0.5)
-
-    def print_ft(self, message: str | PSString) -> None:
-        """Print formatted text to the terminal."""
-        print_formatted_text(ANSI(message))
-
-    def print_error(self, message: ErrorRecord) -> None:
-        """Print an error message to the terminal."""
-        message = str(message)
-        # Check if the message already contains ANSI color codes
-        if not re.search(r"\x1b\[[0-9;]*m", message):
-            message = f"{ANSI_RED}{message}{ANSI_RESET}"
-        self.print_ft(message)
-
-    def print_info(self, message: str) -> None:
-        """Print an informational message to the terminal."""
-        self.print_ft(f"{ANSI_BLUE}[+] {message}{ANSI_RESET}")
 
     def prompt(self) -> str:
         """Prompt the user for input.

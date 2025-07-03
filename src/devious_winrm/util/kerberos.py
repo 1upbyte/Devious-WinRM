@@ -7,10 +7,13 @@ from impacket.krb5 import constants
 from impacket.krb5.ccache import CCache
 from impacket.krb5.kerberosv5 import getKerberosTGT
 from impacket.krb5.types import Principal
-from prompt_toolkit import print_formatted_text as print_ft
 
+from devious_winrm.app import Terminal
+
+LM_HASH = "aad3b435b51404eeaad3b435b51404ee"
 
 def prepare_kerberos(
+        self: Terminal,
         dc: str,
         username: str = None,
         password: str = None,
@@ -43,7 +46,7 @@ def prepare_kerberos(
         f.flush()
         os.environ["KRB5_CONFIG"] = f.name
 
-    print_ft("Using Kerberos!")
+    self.print_info("Using Kerberos!")
 
     tgt, _, old_session_key, session_key = _get_tgt(
         username=username, password=password, nt_hash=nt_hash, domain=realm)
@@ -59,7 +62,6 @@ def prepare_kerberos(
 def _get_tgt(
         username: str = None,
         password: str = None,
-        lm_hash: str = None,
         nt_hash: str = None,
         domain: str = None) -> None:
     """Get a TGT (Ticket Granting Ticket) for Kerberos authentication."""
@@ -71,12 +73,7 @@ def _get_tgt(
         raise ValueError(error)
 
     if nt_hash is not None:
-        if password is not None:
-            error = "Password and NTLM hash cannot be used together."
-            raise ValueError(error)
-        if lm_hash is None:
-            lm_hash: str = "aad3b435b51404eeaad3b435b51404ee"
-
+        lm_hash: str = LM_HASH
 
     user = Principal(username, type=constants.PrincipalNameType.NT_PRINCIPAL.value)
 

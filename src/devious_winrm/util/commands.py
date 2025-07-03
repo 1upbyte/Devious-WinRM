@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 import psrp
 
+from devious_winrm.util.printers import print_error, print_ft, print_info
+
 if TYPE_CHECKING:
     from devious_winrm.app import Terminal
 from typing import Callable
@@ -55,7 +57,7 @@ def run_command(self: Terminal, user_input: str) -> None:
     try:
         commands[cmd]["action"](self, args)
     except KeyError:
-        self.print_error(
+        print_error(
             f"Command '{cmd}' not found. Type 'help' for a list of commands.",
         )
 
@@ -66,11 +68,11 @@ def exit(_self: Terminal, _args: str) -> None:  # noqa: A001
     sys.exit(0)
 
 @command
-def help(self: Terminal, _args: str) -> None:  # noqa: A001
+def help(_self: Terminal, _args: str) -> None:  # noqa: A001
     """Show help information."""
-    self.print_info("Available commands:")
+    print_info("Available commands:")
     for cmd, details in commands.items():
-        self.print_info(f"{cmd}: {details['description']}")
+        print_info(f"{cmd}: {details['description']}")
 
 @command
 def upload(self: Terminal, args: list[str]) -> None:
@@ -81,14 +83,14 @@ def upload(self: Terminal, args: list[str]) -> None:
     Large files may struggle to transfer.
     """
     if len(args) < 2:
-        self.print_ft("Usage: upload <local_path> <remote_path>")
+        print_ft("Usage: upload <local_path> <remote_path>")
         return
     local_path, remote_path = args[0], args[1]
     try:
         psrp.copy_file(self.conn, local_path, remote_path)
-        self.print_ft(f"Uploaded {local_path} to {remote_path}")
+        print_ft(f"Uploaded {local_path} to {remote_path}")
     except psrp.PSRPError as e:
-        self.print_error(f"Failed to upload file: {e}")
+        print_error(f"Failed to upload file: {e}")
 
 @command
 def download(self: Terminal, args: list[str]) -> None:
@@ -99,12 +101,12 @@ def download(self: Terminal, args: list[str]) -> None:
     Large files may struggle to transfer.
     """
     if len(args) < 1:
-        self.print_ft("Usage: download <remote_path> [local_path]")
+        print_ft("Usage: download <remote_path> [local_path]")
         return
     remote_path = args[0]
     local_path = args[1] if len(args) > 1 else remote_path.split("\\")[-1]
     try:
         psrp.fetch_file(self.conn, remote_path, local_path)
-        self.print_ft(f"Downloaded {remote_path} to {local_path}")
+        print_ft(f"Downloaded {remote_path} to {local_path}")
     except psrp.PSRPError as e:
-        self.print_error(f"Failed to download file: {e}")
+        print_error(f"Failed to download file: {e}")
