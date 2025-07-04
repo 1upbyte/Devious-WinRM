@@ -8,6 +8,7 @@ from psrp import SyncRunspacePool, WSManInfo
 
 from devious_winrm.app import Terminal
 from devious_winrm.util.kerberos import prepare_kerberos
+from devious_winrm.util.printers import print_error
 
 LM_HASH: str = "aad3b435b51404eeaad3b435b51404ee"
 
@@ -41,33 +42,34 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0913
         error = "Please specify the FQDN of the domain controller (dc.example.com)."
         raise typer.BadParameter(error)
 
-    if auth == "kerberos":
-        if not dc:
+    if auth == "kerberos" and not dc:
             error = "Domain controller must be specified when using Kerberos."
             raise typer.BadParameter(error)
-        prepare_kerberos(dc, username, password, nt_hash)
 
-    conn = WSManInfo(
-        server=host,
-        username=username,
-        password=password,
-        port=port,
-        auth=auth,
-    )
 
     try:
+        if auth == "kerberos":
+            prepare_kerberos(dc, username, password, nt_hash)
+        conn = WSManInfo(
+            server=host,
+            username=username,
+            password=password,
+            port=port,
+            auth=auth)
         terminal = Terminal(conn)
         with SyncRunspacePool(conn) as rp:
             terminal.run(rp)
     except psrp.WSManAuthenticationError:
         error = "Authentication failed. Please check your credentials and try again."
-        terminal.print_error(error)
+        print_error(error)
     except httpcore.ReadError:
         error = "Connection timed out."
-        terminal.print_error(error)
+        print_error(error)
+    except OSError as err:
+        print_error(err)
     except Exception as err:  # noqa: BLE001
         error = f"An unexpected error occurred: {err}"
-        terminal.print_error(error)
+        print_error(error)
 
 app = typer.Typer()
 app.command()(cli)
