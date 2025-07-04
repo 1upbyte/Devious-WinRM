@@ -4,6 +4,7 @@ from typing import Annotated, Optional
 import httpcore
 import psrp
 import typer
+from impacket.krb5.kerberosv5 import KerberosError
 from psrp import SyncRunspacePool, WSManInfo
 
 from devious_winrm.app import Terminal
@@ -65,7 +66,8 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0913
     except httpcore.ReadError:
         error = "Connection timed out."
         print_error(error)
-    except (OSError, FileNotFoundError, ValueError, NotImplementedError) as err:
+    except (OSError, FileNotFoundError, ValueError,
+            NotImplementedError, KerberosError) as err:
         print_error(err)
     except Exception as err:  # noqa: BLE001
         error = f"An unexpected error occurred: {err}"
