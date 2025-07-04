@@ -61,12 +61,18 @@ def prepare_kerberos(
         raise ValueError(error)
     realm: str = fqdn_array[-2] + "." + fqdn_array[-1]
 
-    is_cred_cached = has_cached_credential(realm)
+    if username is not None:
+        if os.name == "nt":
+            error = "Windows does not support username login. Use a cached ticket."
+            raise NotImplementedError(error)
+        is_cred_cached = False # Ignore cached credential if a username is provided
+    else:
+        is_cred_cached = has_cached_credential(realm)
     print_info("Using Kerberos!")
     if os.name == "nt":
         if is_cred_cached:
             return
-        error = "No cached Kerberos tickets. Rerun Devious-WinRM using 'runas /netonly'."
+        error = "No cached Kerberos ticket. Rerun Devious-WinRM using 'runas /netonly'."
         raise OSError(error)
 
     configure_krb(realm, dc)
