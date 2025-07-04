@@ -19,16 +19,11 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0913
         username: Annotated[str, typer.Option("-u", "--username")] = None,
         password: Annotated[str, typer.Option("-p", "--password")] = None,
         port: Annotated[int, typer.Option("-P", "--port")] = 5985,
-        auth: Annotated[str, typer.Option("-a", "--auth")] = "ntlm",
+        kerberos: Annotated[bool, typer.Option("-k", "--kerberos")] = False,  # noqa: FBT002
         nt_hash: Annotated[str, typer.Option("-H", "--hash")] = None,
-        dc: Annotated[Optional[str], typer.Option("--dc", "--domain-controller")]=None,
+        dc: Annotated[Optional[str], typer.Option("--domain-controller", "--dc")]=None,
 ) -> None:
     """Parse command line arguments and forward them to the terminal."""
-    if auth not in ["basic", "certificate", "credssp", "kerberos", "negotiate", "ntlm"]:
-        error = ("Invalid authentication method. Choose from: basic, certificate, "
-        "credssp, kerberos, negotiate, ntlm.")
-        raise typer.BadParameter(error)
-
     if nt_hash is not None:
         if password is not None:
             error = "Password and NTLM hash cannot be used together."
@@ -38,21 +33,23 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0913
         if len(nt_hash) != 32:
             error = "NTLM hash must be 32 characters long."
             raise typer.BadParameter(error)
-        if auth != "kerberos":
+        if kerberos:
             password = f"{LM_HASH}:{nt_hash}"
 
     if dc is not None and dc.count(".") < 2:
         error = "Please specify the FQDN of the domain controller (dc.example.com)."
         raise typer.BadParameter(error)
 
-    if auth == "kerberos" and not dc:
+    if kerberos and not dc:
             error = "Domain controller must be specified when using Kerberos."
             raise typer.BadParameter(error)
 
 
     try:
-        if auth == "kerberos":
+        auth = "ntlm"
+        if kerberos:
             prepare_kerberos(dc, username, password, nt_hash)
+            auth = "kerberos"
         conn = WSManInfo(
             server=host,
             username=username,
@@ -74,7 +71,7 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0913
         error = f"An unexpected error occurred: {err}"
         print_error(error)
 
-app = typer.Typer()
+app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
 app.command()(cli)
 
 if __name__ == "__main__":
