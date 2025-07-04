@@ -19,17 +19,21 @@ LM_HASH = "aad3b435b51404eeaad3b435b51404ee"
 
 def has_cached_credential(realm: str) -> bool:
     """Check if a (valid) Kerberos TGT is already cached."""
+    if os.name == "nt":
+        parse_klist = parse_nt_klist
+        cmd = "C:/Windows/System32/klist.exe"
+    else:
+        parse_klist = parse_mit_klist
+        cmd = "klist"
+
     try:
-        output = subprocess.run(["klist"], capture_output=True, text=True, check=True)  # noqa: S603, S607
+        output = subprocess.run([cmd], capture_output=True, text=True, check=True)  # noqa: S603
         output: str = output.stdout
     except subprocess.CalledProcessError as err:
         error = "Running 'klist' failed! Is Kerberos installed?"
         raise OSError(error) from err
 
-    if os.name == "nt":
-        tickets = parse_nt_klist(output)
-    else:
-        pass
+    tickets = parse_klist(output)
     date_format = "%m/%d/%Y %H:%M:%S"
     for ticket in tickets:
         server_valid = False
@@ -114,7 +118,9 @@ def _get_tgt(
 def parse_nt_klist(output: str) -> list[dict[str, str]]:
     """Parse the output of 'klist' on Windows.
 
-    Returns an array of dictionaries (one per ticket) with a server and expiration_time field.
+    Returns:
+        List: An array of dicts (one per ticket) with a server & expiration_time field.
+
     """
     tickets = []
     # Split the output into individual ticket blocks
@@ -147,7 +153,15 @@ def parse_nt_klist(output: str) -> list[dict[str, str]]:
             tickets.append(ticket_info)
 
     return tickets
+def parse_mit_klist(output: str) -> list[dict[str, str]]:
+    """Parse the output of 'klist' of MIT Kerberos (non-Windows).
 
+    Returns:
+        List: An array of dicts (one per ticket) with a server & expiration_time field.
+
+    """
+    error = "TODO"
+    raise NotImplementedError(error)
 def configure_krb(realm, dc):
     """Set the Kerberos config file for non-Windows systems."""
     krb5_conf_data: str = dedent(f"""
