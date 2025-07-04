@@ -8,9 +8,12 @@ from psrp import SyncRunspacePool, WSManInfo
 
 from devious_winrm.app import Terminal
 from devious_winrm.util.kerberos import prepare_kerberos
-from devious_winrm.util.printers import print_error
+from devious_winrm.util.printers import print_error, print_ft, print_info
 
 LM_HASH: str = "aad3b435b51404eeaad3b435b51404ee"
+
+print_ft("")
+print_info("Devious-WinRM by 1upbyte")
 
 def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0913
         username: Annotated[str, typer.Option("-u", "--username")] = None,
