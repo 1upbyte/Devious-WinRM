@@ -11,7 +11,6 @@ from impacket.krb5.ccache import CCache
 from impacket.krb5.kerberosv5 import getKerberosTGT
 from impacket.krb5.types import Principal
 
-from devious_winrm.app import Terminal
 from devious_winrm.util.printers import print_info
 
 LM_HASH = "aad3b435b51404eeaad3b435b51404ee"
@@ -104,9 +103,7 @@ def _get_tgt(
     if password is None and nt_hash is None:
         error = "No cached Kerberos ticket. A password, NTLM hash or AES key is required."  # noqa: E501
         raise ValueError(error)
-
-    if nt_hash is not None:
-        lm_hash: str = LM_HASH
+    lm_hash = LM_HASH if nt_hash is not None else None
 
     user = Principal(username, type=constants.PrincipalNameType.NT_PRINCIPAL.value)
 
@@ -152,7 +149,7 @@ def parse_nt_klist(output: str) -> list[dict[str, str]]:
             if found_server and found_end_time:
                 break
 
-        if (ticket_info["server"] is not None 
+        if (ticket_info["server"] is not None
             and ticket_info["expiration_time"] is not None):
             tickets.append(ticket_info)
 
