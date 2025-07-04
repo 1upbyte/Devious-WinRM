@@ -5,7 +5,6 @@ import subprocess
 import tempfile
 from datetime import datetime
 from textwrap import dedent
-from typing import List
 
 from impacket.krb5 import constants
 from impacket.krb5.ccache import CCache
@@ -29,26 +28,22 @@ def has_cached_credential(realm: str) -> bool:
     try:
         output = subprocess.run([cmd], capture_output=True, text=True, check=True)  # noqa: S603
         output: str = output.stdout
-    except subprocess.CalledProcessError as err:
+    except (subprocess.CalledProcessError, FileNotFoundError) as err:
         error = "Running 'klist' failed! Is Kerberos installed?"
         raise OSError(error) from err
 
     tickets = parse_klist(output)
-    date_format = "%m/%d/%Y %H:%M:%S"
+
     for ticket in tickets:
         server_valid = False
         expired = True
 
         if ticket["expiration_time"] is None or ticket["server"] is None:
             continue
-
-        if f"krbtgt/{realm}" in ticket["server"]:
+        if f"krbtgt/{realm}".lower() in ticket["server"].lower():
             server_valid = True
-        if ticket["expiration_time"] is not None:
-            # Windows prints the expiration time in the local timezone.
-            ticket_time = datetime.strptime(ticket["expiration_time"], date_format)  # noqa: DTZ007
-            if datetime.now() < ticket_time:  # noqa: DTZ005
-                expired = False
+        if datetime.now() < ticket["expiration_time"]:  # noqa: DTZ005
+            expired = False
         if server_valid and not expired:
             return True
     return False
@@ -77,6 +72,9 @@ def prepare_kerberos(
     configure_krb(realm, dc)
 
     if not is_cred_cached:
+        if username is None or (password is None and nt_hash is None):
+            error = "No valid cached Kerberos ticket. Username and password/hash must be provided."  # noqa: E501
+            raise ValueError(error)
         tgt, _, old_session_key, session_key = _get_tgt(
             username=username, password=password, nt_hash=nt_hash, domain=realm)
 
@@ -135,18 +133,18 @@ def parse_nt_klist(output: str) -> list[dict[str, str]]:
 
         for _line in lines:
             line = _line.strip()
-            if line: # Ensure the line is not empty
-                if line.startswith("Server:"):
-                    ticket_info["server"] = line.split("Server: ")[1].strip()
-                    found_server = True
-                elif line.startswith("End Time:"):
-                    # Extract the End Time and remove "(local)"
-                    end_time_raw = line.split("End Time: ")[1].strip()
-                    ticket_info["expiration_time"] = end_time_raw.replace(" (local)", "")
-                    found_end_time = True
+            if line.startswith("Server:"):
+                ticket_info["server"] = line.split("Server: ")[1].strip()
+                found_server = True
+            elif line.startswith("End Time:"):
+                end_time_raw = line.split("End Time: ")[1].strip()
+                ticket_time = end_time_raw.replace(" (local)", "")
+                date_format = "%m/%d/%Y %H:%M:%S"
+                ticket_info["expiration_time"] = datetime.strptime(ticket_time, date_format)  # noqa: DTZ007, E501
+                found_end_time = True
 
             if found_server and found_end_time:
-                break # Exit the inner loop for this block
+                break
 
         if (ticket_info["server"] is not None 
             and ticket_info["expiration_time"] is not None):
@@ -160,9 +158,27 @@ def parse_mit_klist(output: str) -> list[dict[str, str]]:
         List: An array of dicts (one per ticket) with a server & expiration_time field.
 
     """
-    error = "TODO"
-    raise NotImplementedError(error)
-def configure_krb(realm, dc):
+    tickets = []
+    # Regex to match lines containing ticket information
+    # It captures the expiration date and time, and the service principal
+    ticket_pattern = re.compile(r"^\s*\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}:\d{2}\s+(\d{2}/\d{2}/\d{4}\s+\d{2}:\d{2}:\d{2})\s+([^\s]+(?:/[^\s]+)*@(?:[A-Z0-9.]+))$")  # noqa: E501
+
+    for line in output.splitlines():
+        match = ticket_pattern.match(line)
+        if match:
+            expiration_time_str = match.group(1)
+            server = match.group(2)
+
+            date_format = "%m/%d/%Y %H:%M:%S"
+            expiration_time = datetime.strptime(expiration_time_str, date_format)  # noqa: DTZ007
+
+            tickets.append({
+                "expiration_time": expiration_time,
+                "server": server,
+            })
+    return tickets
+
+def configure_krb(realm: str, dc: str) -> None:
     """Set the Kerberos config file for non-Windows systems."""
     krb5_conf_data: str = dedent(f"""
     [libdefaults]

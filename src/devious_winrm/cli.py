@@ -65,7 +65,7 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0913
     except httpcore.ReadError:
         error = "Connection timed out."
         print_error(error)
-    except OSError as err:
+    except (OSError, FileNotFoundError, ValueError) as err:
         print_error(err)
     except Exception as err:  # noqa: BLE001
         error = f"An unexpected error occurred: {err}"
