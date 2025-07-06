@@ -11,14 +11,15 @@ import time
 import psrp
 from prompt_toolkit import HTML, PromptSession
 from prompt_toolkit.lexers import PygmentsLexer
-from prompt_toolkit.styles.pygments import style_from_pygments_cls
+from prompt_toolkit.shortcuts import CompleteStyle
 from psrp import WSManInfo
 from psrpcore.types import PSInvocationState
 from pygments.lexers.shell import PowerShellLexer
-from pygments.styles import get_style_by_name
 
 from devious_winrm.util.commands import commands, run_command
+from devious_winrm.util.completers import RemotePathAutoCompleter
 from devious_winrm.util.get_command_output import get_command_output
+from devious_winrm.util.keybinds import kb
 from devious_winrm.util.printers import print_error, print_ft, print_info
 
 
@@ -33,15 +34,18 @@ class Terminal:
         self.username = None
         self.session = PromptSession(
             lexer=PygmentsLexer(PowerShellLexer),
-            style=style_from_pygments_cls(get_style_by_name("monokai")),
             bottom_toolbar=self.bottom_toolbar,
             refresh_interval=1,
+            key_bindings=kb,
+            complete_while_typing=False,
+            complete_style=CompleteStyle.READLINE_LIKE,
         )
 
     def run(self, rp: psrp.SyncRunspacePool) -> None:
         """Run the terminal session."""
         self.rp = rp
-        self.username = get_command_output(self.rp, "whoami")
+        self.session.completer=RemotePathAutoCompleter(rp=self.rp)
+        self.username = get_command_output(self.rp, "whoami")[0].strip()
         threading.Thread(target=self.keepalive, daemon=True).start()
         while True:
             try:
@@ -100,7 +104,7 @@ class Terminal:
         Returns the user input as a string.
         """
         self.ps = psrp.SyncPowerShell(self.rp)
-        cwd: str = get_command_output(self.rp, "pwd")
+        cwd: str = get_command_output(self.rp, "pwd")[0].strip()
         prefix = f"{cwd}> "
         return self.session.prompt(HTML(f"{prefix}"))
 
