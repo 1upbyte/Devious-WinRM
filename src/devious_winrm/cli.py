@@ -36,7 +36,7 @@ flags["kerberos"] = typer.Option("-k", "--kerberos", help=desc["kerberos"])
 flags["nt_hash"] = typer.Option("-H", "--hash", help=desc["nt_hash"])
 flags["dc"] = typer.Option("--domain-controller", "--dc", help=desc["dc"])
 
-def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0913
+def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
     username: Annotated[str, flags["username"]] = None,
     password: Annotated[str, flags["password"]] = None,
     port: Annotated[int, flags["port"]] = 5985,
