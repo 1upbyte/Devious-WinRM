@@ -5,7 +5,6 @@ Check out his project at https://github.com/adityatelange/evil-winrm-py/
 """
 import os
 from collections.abc import Iterator
-from pathlib import Path
 
 import psrp
 from prompt_toolkit.completion import (
