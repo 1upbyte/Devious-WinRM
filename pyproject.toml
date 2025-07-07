@@ -13,7 +13,7 @@ dependencies = [
     "impacket==0.12.0",
     "Pygments==2.19.1",
     "rich==14.0.0",
-    "typer==0.9.0"
+    "typer==0.16.0"
 ]
 
 [project.scripts]
