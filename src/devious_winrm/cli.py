@@ -16,13 +16,33 @@ LM_HASH: str = "aad3b435b51404eeaad3b435b51404ee"
 print_ft("")
 print_info("Devious-WinRM by 1upbyte")
 
+
+desc = {}
+desc["username"] = "Username used for authentication."
+desc["password"] = "Password used for authentication. Cannot be used with an NTLM hash."  # noqa: S105
+desc["port"] = "Port of remote host, 5985 by default, 5986 when using SSL."
+desc["kerberos"] = ("Kerberos authentication. If no username is provided,"
+    " uses cached TGT. Requires specifiying a domain controller.")
+desc["nt_hash"] = ("NTLM Hash. Accepts both LM:NTLM or just NTLM."
+    " Cannot be used with password.")
+desc["dc"] = ("FQDN for the domain controller."
+    " Required for Kerberos authentication.")
+
+flags = {}
+flags["username"] = typer.Option("-u", "--username", help=desc["username"])
+flags["password"] = typer.Option("-p", "--password", help=desc["password"])
+flags["port"] = typer.Option("-P", "--port", help=desc["port"])
+flags["kerberos"] = typer.Option("-k", "--kerberos", help=desc["kerberos"])
+flags["nt_hash"] = typer.Option("-H", "--hash", help=desc["nt_hash"])
+flags["dc"] = typer.Option("--domain-controller", "--dc", help=desc["dc"])
+
 def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0913
-        username: Annotated[str, typer.Option("-u", "--username")] = None,
-        password: Annotated[str, typer.Option("-p", "--password")] = None,
-        port: Annotated[int, typer.Option("-P", "--port")] = 5985,
-        kerberos: Annotated[bool, typer.Option("-k", "--kerberos")] = False,  # noqa: FBT002
-        nt_hash: Annotated[str, typer.Option("-H", "--hash")] = None,
-        dc: Annotated[Optional[str], typer.Option("--domain-controller", "--dc")]=None,
+    username: Annotated[str, flags["username"]] = None,
+    password: Annotated[str, flags["password"]] = None,
+    port: Annotated[int, flags["port"]] = 5985,
+    kerberos: Annotated[bool, flags["kerberos"]] = False,  # noqa: FBT002
+    nt_hash: Annotated[str, flags["nt_hash"]] = None,
+    dc: Annotated[Optional[str], flags["dc"]]=None,
 ) -> None:
     """Parse command line arguments and forward them to the terminal."""
     if nt_hash is not None:
