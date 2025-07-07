@@ -2,6 +2,8 @@
 
 A Pentester's Powershell Client.
 
+![The help screen for Devious-WinRM, showing a variety of flags and options.](assets/help-screen.png "Help screen")
+
 ## Description / Purpose
 This tool allows one to access servers running WinRM or Powershell Remoting, with additional tools for capture the flag / pentesting. I created this project to fix a few grievances I have with existing tools (such as the amazing Evil-WinRM) and to contribute to the open-source hacking community.
 
