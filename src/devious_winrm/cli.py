@@ -86,6 +86,9 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0913
     except httpcore.ReadError:
         error = "Connection timed out."
         print_error(error)
+    except httpcore.ConnectError as err:
+        error = f"Connection error: {err}"
+        print_error(error)
     except (OSError, FileNotFoundError, ValueError,
             NotImplementedError, KerberosError) as err:
         print_error(err)
