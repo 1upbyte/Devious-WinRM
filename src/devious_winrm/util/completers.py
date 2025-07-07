@@ -3,6 +3,7 @@
 Thank you to @adityatelange for much of this code.
 Check out his project at https://github.com/adityatelange/evil-winrm-py/
 """
+import os
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -28,24 +29,32 @@ class RemotePathAutoCompleter(PathCompleter):
 
     def get_completions(self, document: Document, _: CompleteEvent) -> Iterator[Completion]:  # noqa: E501
         """Return the available paths."""
-        word_before_cursor = document.get_word_before_cursor(WORD=True)
+        path = document.get_word_before_cursor(WORD=True)
         attrs = ""
-        if word_before_cursor and document.text_before_cursor.split()[0] == "cd":
+        doc_text = document.text_before_cursor
+        if doc_text and doc_text.split()[0] == "cd":
             attrs = "-Attributes Directory"
-        path = Path(word_before_cursor)
-        directory = str(path.parent)
-        prefix = str(path.name)
-        if prefix == "..":
-            directory += f"\\{prefix}"
-            prefix = ""
-        cmd = f"gci -LiteralPath '{directory}' -Filter '{prefix}*' {attrs} -Fo | select -Exp Name"  # noqa: E501
+        # Using os.path treats strings ending with \ as folders, which is desriable
+        directory = os.path.dirname(path) or "."  # noqa: PTH120
+        prefix = os.path.basename(path) or ""  # noqa: PTH119
+        cmd = f"gci -LiteralPath '{directory}' -Filter '{prefix}*' {attrs} -Force \
+            | Select-Object @{{Name='Name'; \
+            Expression={{if ($_.PSIsContainer) {{$_.Name + '\\'}} else {{$_.Name}}}}}} \
+            | Select-Object -ExpandProperty Name"
+
         children = get_command_output(self.rp, cmd)
         for child in children:
             completion = child
-            if " " in child: # Quote paths with spaces
+            # For some reason passing 'C:\file' to -LiteralPath in the command will
+            # cause it to return the same file. Powershell quirks I suppose
+            if completion == directory:
+                completion = ""
+            completion = completion.removesuffix("\\")
+            # Have the user type the \, otherwise pressing tab will cycle completions
+            if " " in completion: # Quote paths with spaces
                 completion = f'"{completion}"'
-            completion = completion[len(prefix) :]
-            yield Completion(completion, selected_style=CompleteStyle.READLINE_LIKE)
-
+            yield Completion(completion,
+                             selected_style=CompleteStyle.READLINE_LIKE,
+                             start_position=-len(prefix))
 
 
