@@ -1,6 +1,6 @@
 [project]
 name = "Devious-WinRM"
-version = "1.0.0"
+version = "1.0.1"
 description = "A Pentester's Powershell Client."
 readme = "README.md"
 authors = [
@@ -9,6 +9,7 @@ authors = [
 license = {text = "GPL-3.0-or-later"}
 dependencies = [
     "prompt_toolkit>=3.0.5",
+    "impacket==0.12.0",
     "pypsrp[kerberos]>=1.0.0b1",
     "Pygments>=2.19.1",
     "rich>=14.0.0",
