@@ -1,19 +1,18 @@
 [project]
 name = "Devious-WinRM"
-version = "0.1.0"
-description = "A Pentester's (work-in-progress) Powershell Client."
+version = "1.0.0"
+description = "A Pentester's Powershell Client."
 readme = "README.md"
 authors = [
     {name = "Pablo Comino", email = "pablo@pablocomino.com"}
 ]
 license = {text = "GPL-3.0-or-later"}
 dependencies = [
-    "prompt_toolkit==3.0.5",
-    "pypsrp[kerberos]>=1.0.0b1,<1.1.0",
-    "impacket==0.12.0",
-    "Pygments==2.19.1",
-    "rich==14.0.0",
-    "typer==0.16.0"
+    "prompt_toolkit>=3.0.5",
+    "pypsrp[kerberos]>=1.0.0b1",
+    "Pygments>=2.19.1",
+    "rich>=14.0.0",
+    "typer>=0.16.0"
 ]
 
 [project.scripts]
@@ -24,7 +23,7 @@ dwrm = "devious_winrm.cli:app"
 devious_winrm = "devious_winrm.cli:app"
 
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "setuptools"]
 build-backend = "hatchling.build"
 
 [tool.ruff]

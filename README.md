@@ -2,7 +2,7 @@
 
 A Pentester's Powershell Client.
 
-![The help screen for Devious-WinRM, showing a variety of flags and options.](assets/help-screen.png "Help screen")
+![The help screen for Devious-WinRM, showing a variety of flags and options.](https://raw.githubusercontent.com/1upbyte/Devious-WinRM/refs/heads/main/assets/help-screen.png "Help screen")
 
 ## Description / Purpose
 This tool allows one to access servers running WinRM or Powershell Remoting, with additional tools for capture the flag / pentesting. I created this project to fix a few grievances I have with existing tools (such as the amazing Evil-WinRM) and to contribute to the open-source hacking community.
@@ -23,6 +23,20 @@ Under the hood, Devious-WinRM is not directly based on WinRM. It is instead buil
 - [ ] Logging
 - [ ] In-Memory .NET/Powershell loader
 - [ ] Maybe: Local logon token upgrader via RunasCs 
+
+
+## Installation
+On Linux, Kerberos needs to be installed: `sudo apt install gcc python3-dev libkrb5-dev krb5-pkinit`
+
+The recommended installation method is with [uv](https://github.com/astral-sh/uv). Check out their [docs](https://docs.astral.sh/uv/getting-started/installation/) for how to install it, then run:
+
+`uv tool install devious-winrm`
+
+Alternatively, use pipx or pip:
+
+`pipx install devious-winrm`
+
+`pip install devious-winrm`
 
 ## Credits
 - [Evil-WinRM](https://github.com/Hackplayers/evil-winrm)  - This goes without saying, but Evil-WinRM is an incredible tool. It was the primary inspiration for this project.
