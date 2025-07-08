@@ -30,11 +30,7 @@ On Linux, Kerberos needs to be installed: `sudo apt install gcc python3-dev libk
 
 The recommended installation method is with [uv](https://github.com/astral-sh/uv). Check out their [docs](https://docs.astral.sh/uv/getting-started/installation/) for how to install it, then run:
 
-<<<<<<< HEAD
-`uv tool install devious-winrm`
-=======
 `uv tool install devious-winrm --prerelease=allow`
->>>>>>> aeee9ee (Release 1.0.0)
 
 Alternatively, use pipx or pip:
 
