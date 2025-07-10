@@ -4,6 +4,7 @@ Thank you to @adityatelange for much of this code.
 Check out his project at https://github.com/adityatelange/evil-winrm-py/
 """
 import pathlib
+import re
 from collections.abc import Iterator
 
 import psrp
@@ -42,7 +43,7 @@ class RemotePathAutoCompleter(PathCompleter):
             prefix = ""
         # Accounts PureWindowsPath(C:) not putting a \ in front of itself
         drive_letter_path = False
-        if not directory.endswith(("\\", "/")):
+        if re.match(r"^[A-Za-z]:$", directory): # Matches C:, D:, etc
             directory += "\\"
             drive_letter_path = True
 
