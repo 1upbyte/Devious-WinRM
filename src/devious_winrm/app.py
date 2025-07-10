@@ -27,7 +27,12 @@ class Terminal:
     """Terminal for handling connection and command execution."""
 
     def __init__(self, conn: WSManInfo) -> None:
-        """Initialize the terminal with connection and runspace pool."""
+        """Initialize the terminal with connection and runspace pool.
+
+        Args:
+            conn (WSManInfo): The connection information.
+
+        """
         self.conn = conn
         self.rp = None
         self.ps = None
@@ -42,7 +47,12 @@ class Terminal:
         )
 
     def run(self, rp: psrp.SyncRunspacePool) -> None:
-        """Run the terminal session."""
+        """Run the terminal session.
+
+        Args:
+            rp (psrp.SyncRunspacePool): The RunspacePool to use for the terminal.
+
+        """
         self.rp = rp
         self.session.completer=RemotePathAutoCompleter(rp=self.rp)
         self.username = get_command_output(self.rp, "whoami")[0].strip()
@@ -77,7 +87,12 @@ class Terminal:
 
 
     def process_input(self, user_input: str) -> None:
-        """Execute a command or run a registered action."""
+        """Execute a command or run a registered action.
+
+        Args:
+            user_input (str): The input to parse.
+
+        """
         if user_input.split()[0] in commands:
             run_command(self, user_input)
             return
@@ -101,7 +116,9 @@ class Terminal:
     def prompt(self) -> str:
         """Prompt the user for input.
 
-        Returns the user input as a string.
+        Returns:
+            str: The user's input.
+
         """
         self.ps = psrp.SyncPowerShell(self.rp)
         cwd: str = get_command_output(self.rp, "pwd")[0].strip()

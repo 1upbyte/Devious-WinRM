@@ -16,7 +16,18 @@ from devious_winrm.util.printers import print_info
 LM_HASH = "aad3b435b51404eeaad3b435b51404ee"
 
 def has_cached_credential(realm: str) -> bool:
-    """Check if a (valid) Kerberos TGT is already cached."""
+    """Check if a (valid) Kerberos TGT is already cached.
+
+    Args:
+        realm (str): The Kerberos realm to check. Usually in format "example.tld"
+
+    Raises:
+        OSError: If an issue occurs when running "klist"
+
+    Returns:
+        bool: Whether a valid cached Kerberos credential exists.
+
+    """
     if os.name == "nt":
         parse_klist = parse_nt_klist
         cmd = "C:/Windows/System32/klist.exe"
@@ -52,7 +63,23 @@ def prepare_kerberos(
         username: str = None,
         password: str = None,
         nt_hash: str = None) -> None:
-    """Prepare the Kerberos configuration."""
+    """Prepare the Kerberos configuration.
+
+    Args:
+        dc (str): The FQDN of the KDC (the DC in Active Directory).
+        username (str, optional): The username to request a TGT with. Defaults to None.
+        password (str, optional): The password to request a TGT with. Defaults to None.
+        nt_hash (str, optional): The NT hash to request a TGT with. Defaults to None.
+
+    Raises:
+        ValueError: If the DC is not a FQDN (has at minimum two periods).
+        NotImplementedError: If the user is on Windows and attempts \
+              username/password auth.
+        OSError: If the user is on Windows and lacks a cached ticket.
+        ValueError: If the user is on non-Windows and lacks both a \
+            cached ticket and a username/password/NT hash.
+
+    """
     dc: str = dc.upper()
     fqdn_array: list[str] = dc.split(".")
     if len(fqdn_array) < 3:
@@ -96,7 +123,26 @@ def _get_tgt(
         password: str = None,
         nt_hash: str = None,
         domain: str = None) -> None:
-    """Get a TGT (Ticket Granting Ticket) for Kerberos authentication."""
+    """Get a TGT (Ticket Granting Ticket) for Kerberos authentication.
+
+    Args:
+        username (str, optional): Principal for Kerberos login. Defaults to None.
+        password (str, optional): Password for Kerberos login. Defaults to None.
+        nt_hash (str, optional): NT Hash for Kerberos login. Defaults to None.
+        domain (str, optional): Kerberos realm (usually domain.tld). Defaults to None.
+
+    Raises:
+        ValueError: If no username is provided.
+        ValueError: If no password or NT hash is provided.
+
+    Returns:
+        tuple: A tuple containing:
+            - bytes: The TGT.
+            - _SimplifiedEnctype: The cipher type used.
+            - Key: The pass the hash session key.
+            - Key: The session key.
+
+    """
     if username is None:
         error = "No cached Kerberos ticket. A username is required."
         raise ValueError(error)
