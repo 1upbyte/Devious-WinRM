@@ -61,15 +61,16 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
         error = "Please specify the FQDN of the domain controller (dc.example.com)."
         raise typer.BadParameter(error)
 
-    if kerberos and not dc:
-            error = "Domain controller must be specified when using Kerberos."
+    if kerberos and not dc and host.count(".") < 2:
+            error = "Domain controller or FQDN must be specified when using Kerberos."
             raise typer.BadParameter(error)
 
 
     try:
         auth = "ntlm"
         if kerberos:
-            prepare_kerberos(dc, username, password, nt_hash)
+            dc_fqdn = dc if dc else host
+            prepare_kerberos(dc_fqdn, username, password, nt_hash)
             auth = "kerberos"
         conn = WSManInfo(
             server=host,
