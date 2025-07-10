@@ -78,7 +78,7 @@ class Terminal:
 
     def process_input(self, user_input: str) -> None:
         """Execute a command or run a registered action."""
-        if user_input in commands:
+        if user_input.split()[0] in commands:
             run_command(self, user_input)
             return
 

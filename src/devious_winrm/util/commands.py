@@ -10,6 +10,7 @@ from devious_winrm.util.printers import print_error, print_ft, print_info
 
 if TYPE_CHECKING:
     from devious_winrm.app import Terminal
+import pathlib
 from typing import Callable
 
 commands = {}
@@ -82,13 +83,16 @@ def upload(self: Terminal, args: list[str]) -> None:
 
     Large files may struggle to transfer.
     """
-    if len(args) < 2:
-        print_ft("Usage: upload <local_path> <remote_path>")
+    if len(args) < 1:
+        print_ft("Usage: upload <local_path> [remote_path]")
         return
-    local_path, remote_path = args[0], args[1]
+    local_path = pathlib.Path(args[0])
+    remote_path = args[1] if len(args) > 1 else local_path.name
     try:
-        psrp.copy_file(self.conn, local_path, remote_path)
-        print_ft(f"Uploaded {local_path} to {remote_path}")
+        final_path = psrp.copy_file(self.conn, local_path, remote_path)
+        print_ft(f"Uploaded {local_path} to {final_path}")
+    except FileNotFoundError:
+        print_error(f"No such file or directory: {local_path}")
     except psrp.PSRPError as e:
         print_error(f"Failed to upload file: {e}")
 
@@ -104,9 +108,9 @@ def download(self: Terminal, args: list[str]) -> None:
         print_ft("Usage: download <remote_path> [local_path]")
         return
     remote_path = args[0]
-    local_path = args[1] if len(args) > 1 else remote_path.split("\\")[-1]
+    local_path = args[1] if len(args) > 1 else remote_path.split("\\")[-1] # Filename
     try:
-        psrp.fetch_file(self.conn, remote_path, local_path)
-        print_ft(f"Downloaded {remote_path} to {local_path}")
+        final_path = psrp.fetch_file(self.conn, remote_path, local_path)
+        print_ft(f"Downloaded {remote_path} to {final_path}")
     except psrp.PSRPError as e:
         print_error(f"Failed to download file: {e}")
