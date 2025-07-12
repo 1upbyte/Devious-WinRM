@@ -94,7 +94,8 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
             NotImplementedError, KerberosError) as err:
         print_error(err)
     except Exception as err:  # noqa: BLE001
-        error = f"An unexpected error occurred: {err}"
+        error = (f"Unexpected error occurred of type {err.__class__},"
+            f" please report it! \n{err}")
         print_error(error)
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
