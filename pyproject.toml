@@ -6,7 +6,6 @@ readme = "README.md"
 authors = [
     {name = "Pablo Comino", email = "pablo@pablocomino.com"}
 ]
-license = {text = "GPL-3.0-or-later"}
 dependencies = [
     "prompt_toolkit>=3.0.5",
     "impacket==0.12.0",
@@ -24,8 +23,8 @@ dwrm = "devious_winrm.cli:app"
 devious_winrm = "devious_winrm.cli:app"
 
 [build-system]
-requires = ["hatchling", "setuptools"]
-build-backend = "hatchling.build"
+requires = ["setuptools>=80.9.0"]
+build-backend = "setuptools.build_meta"
 
 [tool.ruff]
 select = ["ALL"]
