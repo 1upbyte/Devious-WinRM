@@ -1,12 +1,12 @@
 """Main file for the Devious-WinRM."""
 from __future__ import annotations
 
-import contextlib
 import datetime
 import shutil
 import sys
 import threading
 import time
+from xml.etree.ElementTree import ParseError
 
 import psrp
 from prompt_toolkit import HTML, PromptSession
@@ -106,8 +106,14 @@ class Terminal:
             output = psrp.SyncPSDataCollection()
             output.data_added = print_ft
             self.ps.streams.error.data_added = print_error
-            with contextlib.suppress(psrp.PipelineStopped):
-                    self.ps.invoke(output_stream=output)
+            try:
+                self.ps.invoke(output_stream=output)
+            except (psrp.PipelineStopped, psrp.PipelineFailed) as e:
+                print_error(e)
+            except ParseError:
+                print_error("Command failed: Invalid character in command.")
+
+
         thread = threading.Thread(target=_process_input_logic, daemon=True)
         thread.start()
         while thread.is_alive():
