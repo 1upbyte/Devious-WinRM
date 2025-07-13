@@ -6,11 +6,13 @@ from typing import TYPE_CHECKING
 
 import psrp
 
-from devious_winrm.util.printers import print_error, print_ft, print_info
+from devious_winrm.util.printers import print_error, print_info
+from devious_winrm.util.upload_to_memory import upload_to_memory
 
 if TYPE_CHECKING:
     from devious_winrm.app import Terminal
-import pathlib
+import argparse
+from pathlib import Path
 from typing import Callable
 
 commands = {}
@@ -79,21 +81,41 @@ def help(_self: Terminal, _args: str) -> None:  # noqa: A001
 def upload(self: Terminal, args: list[str]) -> None:
     """Upload a file.
 
-    Usage: upload <local_path> <remote_path>.
+    Usage: upload <local_path> [remote_path].
+
+    Flags: -m , --memory_only <var_name>
+    Stores the file in a variable instead of on disk.
 
     Large files may struggle to transfer.
     """
-    if len(args) < 1:
-        print_ft("Usage: upload <local_path> [remote_path]")
-        return
-    local_path = pathlib.Path(args[0])
-    remote_path = args[1] if len(args) > 1 else local_path.name
+    epilog = "Large files may struggle to transfer."
+    parser = argparse.ArgumentParser("upload", exit_on_error=False, epilog=epilog)
+    parser.add_argument("local_path", type=str)
+    parser.add_argument(dest="destination", type=str, nargs="?",
+                        help="prepend with a $ to store the file"
+                        " in a variable instead of on disk")
     try:
-        final_path = psrp.copy_file(self.conn, local_path, remote_path)
-        print_ft(f"Uploaded {local_path} to {final_path}")
+            parsed_args = parser.parse_args(args)
+    except argparse.ArgumentError as e:
+        print_error(e)
+        print_error("Use --help for usage details.")
+        return
+    except SystemExit: # --help raises SystemExit
+        return
+    try:
+        local_path: Path = Path(parsed_args.local_path)
+        destination: str = parsed_args.destination or local_path.name
+        in_memory = destination.startswith("$") if destination else False
+        if in_memory:
+            destination = destination[1:] # Remove the $ prefix
+            var_name = upload_to_memory(self.rp, local_path, destination)
+            print_info(f"Uploaded {local_path} to ${var_name}")
+        else:
+            final_path = psrp.copy_file(self.conn, local_path, destination)
+            print_info(f"Uploaded {local_path} to {final_path}")
     except FileNotFoundError:
         print_error(f"No such file or directory: {local_path}")
-    except psrp.PSRPError as e:
+    except (psrp.PSRPError, OSError) as e:
         print_error(f"Failed to upload file: {e}")
 
 @command
@@ -104,13 +126,25 @@ def download(self: Terminal, args: list[str]) -> None:
 
     Large files may struggle to transfer.
     """
-    if len(args) < 1:
-        print_ft("Usage: download <remote_path> [local_path]")
-        return
-    remote_path = args[0]
-    local_path = args[1] if len(args) > 1 else remote_path.split("\\")[-1] # Filename
+    epilog = "Large files may struggle to transfer."
+    parser = argparse.ArgumentParser("download", exit_on_error=False, epilog=epilog)
+    parser.add_argument("remote_path", type=str)
+    parser.add_argument("local_path", type=str, nargs="?")
     try:
+        parsed_args = parser.parse_args(args)
+    except argparse.ArgumentError as e:
+        print_error(e)
+        print_error("Use --help for usage details.")
+        return
+    except SystemExit: # --help raises SystemExit
+        return
+
+    try:
+        remote_path: str = parsed_args.remote_path
+        local_path: str = parsed_args.local_path or remote_path.split("\\")[-1]
         final_path = psrp.fetch_file(self.conn, remote_path, local_path)
-        print_ft(f"Downloaded {remote_path} to {final_path}")
-    except psrp.PSRPError as e:
+        print_info(f"Downloaded {remote_path} to {final_path}")
+    except FileNotFoundError:
+        print_error(f"No such file or directory: {local_path}")
+    except (psrp.PSRPError, OSError) as e:
         print_error(f"Failed to download file: {e}")
