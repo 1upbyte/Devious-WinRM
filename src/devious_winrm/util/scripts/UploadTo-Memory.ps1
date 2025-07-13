@@ -21,6 +21,7 @@ begin {
     $algo = [System.Security.Cryptography.SHA1CryptoServiceProvider]::Create()
     $bytes = $null
     $expectedHash = ""
+    $memoryStream = New-Object System.IO.MemoryStream
 
     $bindingFlags = [System.Reflection.BindingFlags]'NonPublic, Instance'
     Function Get-Property {
@@ -115,13 +116,14 @@ begin {
     # each input to the next run until the final input is reach (checksum of
     # the file) which is processed in end.
     if ($null -ne $bytes) {
+        $memoryStream.Write($bytes, 0, $bytes.Length)
         $algo.TransformBlock($bytes, 0, $bytes.Length, $bytes, 0) > $null
     }
     # Pwsh v2 can't seem to use the bound parameter name, so just use $_.
     $bytes = $_
     Write-Verbose $bytes.Length
 } end {
-    New-Variable -Name $variableName -Value $bytes -Force
+    
 
     $expectedHash = [System.Text.Encoding]::UTF8.GetString($bytes)
     $algo.TransformFinalBlock($bytes, 0, 0) > $null
@@ -132,6 +134,6 @@ begin {
     if ($actualHash -ne $expectedHash) {
         throw "Transport failure, hash mismatch`r`nActual: $actualHash`r`nExpected: $expectedHash"
     }
-
+    New-Variable -Name $variableName -Force -Value $memoryStream.ToArray()
     $variableName
 }
