@@ -37,6 +37,12 @@ class Terminal:
         self.rp = None
         self.ps = None
         self.username = None
+        self.pause_keepalive = False
+        """
+            If True, prevents the keep-alive mechanism from sending commands.
+            Having the keep-alive be sent while another command is executing
+            can lead to issues.
+        """
         self.session = PromptSession(
             lexer=PygmentsLexer(PowerShellLexer),
             bottom_toolbar=self.bottom_toolbar,
@@ -59,7 +65,9 @@ class Terminal:
         threading.Thread(target=self.keepalive, daemon=True).start()
         while True:
             try:
+                self.pause_keepalive = False
                 user_input = self.prompt().strip()
+                self.pause_keepalive = True
                 self.process_input(user_input)
             except (SystemExit, EOFError):
                 print_info("Exiting the application...")
@@ -134,6 +142,8 @@ class Terminal:
     def keepalive(self) -> None:
         """Keep the connection alive by sending a repeat no-op command."""
         while True:
+            while self.pause_keepalive:
+                time.sleep(1)
             ps = psrp.SyncPowerShell(self.rp)
             ps.add_script("").invoke()
             time.sleep(60)

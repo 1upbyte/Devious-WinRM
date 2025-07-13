@@ -84,7 +84,7 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
     except psrp.WSManAuthenticationError:
         error = "Authentication failed. Please check your credentials and try again."
         print_error(error)
-    except httpcore.ReadError:
+    except (httpcore.ReadError, httpcore.ConnectionNotAvailable):
         error = "Connection timed out."
         print_error(error)
     except httpcore.ConnectError as err:
