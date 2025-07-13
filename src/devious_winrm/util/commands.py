@@ -111,6 +111,9 @@ def upload(self: Terminal, args: list[str]) -> None:
             var_name = upload_to_memory(self.rp, local_path, destination)
             print_info(f"Uploaded {local_path} to ${var_name}")
         else:
+            # Uploading a file to disk uses a secondary RunspacePool, so the keep-alive
+            # from the main one won't interfere.
+            self.pause_keepalive = False
             final_path = psrp.copy_file(self.conn, local_path, destination)
             print_info(f"Uploaded {local_path} to {final_path}")
     except FileNotFoundError:
@@ -140,6 +143,9 @@ def download(self: Terminal, args: list[str]) -> None:
         return
 
     try:
+        # Downloading a file uses a secondary RunspacePool, so the keep-alive
+        # from the main one won't interfere.
+        self.pause_keepalive = False
         remote_path: str = parsed_args.remote_path
         local_path: str = parsed_args.local_path or remote_path.split("\\")[-1]
         final_path = psrp.fetch_file(self.conn, remote_path, local_path)
