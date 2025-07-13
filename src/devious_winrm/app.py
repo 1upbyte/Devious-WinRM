@@ -101,7 +101,7 @@ class Terminal:
             user_input (str): The input to parse.
 
         """
-        if user_input.split()[0] in commands:
+        if user_input and user_input.split()[0] in commands:
             run_command(self, user_input)
             return
 
