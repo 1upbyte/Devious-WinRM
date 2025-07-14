@@ -62,7 +62,7 @@ class Terminal:
         self.rp = rp
         self.session.completer=RemotePathAutoCompleter(rp=self.rp)
         self.username = get_command_output(self.rp, "whoami")[0].strip()
-        threading.Thread(target=self.keepalive, daemon=True).start()
+        threading.Thread(target=self.keepalive, name="keep-alive", daemon=True).start()
         while True:
             try:
                 self.pause_keepalive = False
@@ -101,11 +101,12 @@ class Terminal:
             user_input (str): The input to parse.
 
         """
-        if user_input and user_input.split()[0] in commands:
-            run_command(self, user_input)
-            return
 
         def _process_input_logic() -> None:
+            if user_input and user_input.split()[0] in commands:
+                run_command(self, user_input)
+                return
+
             """Logic to process user input and execute commands."""
             self.ps = psrp.SyncPowerShell(self.rp)
             self.ps.add_script(user_input)
@@ -122,7 +123,7 @@ class Terminal:
                 print_error("Command failed: Invalid character in command.")
 
 
-        thread = threading.Thread(target=_process_input_logic, daemon=True)
+        thread = threading.Thread(target=_process_input_logic, name=user_input, daemon=True)
         thread.start()
         while thread.is_alive():
             thread.join(timeout=0.5)
