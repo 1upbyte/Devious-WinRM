@@ -1,10 +1,15 @@
 """Store keybinds for the terminal."""
+from typing import TYPE_CHECKING
+
 from prompt_toolkit.key_binding import KeyBindings
+
+if TYPE_CHECKING:
+    from prompt_toolkit.key_binding.key_processor import KeyPressEvent
 
 kb = KeyBindings()
 
 @kb.add("tab")
-def _(event) -> None:  # noqa: ANN001
+def _(event: "KeyPressEvent") -> None:
     """When Tab is pressed, handle completion.
 
     1. If a completion session is active, cycle to the next completion.
