@@ -4,8 +4,8 @@ from __future__ import annotations
 import datetime
 import shutil
 import sys
-import threading
 import time
+from threading import Thread
 from xml.etree.ElementTree import ParseError
 
 import psrp
@@ -26,17 +26,18 @@ from devious_winrm.util.printers import print_error, print_ft, print_info
 class Terminal:
     """Terminal for handling connection and command execution."""
 
-    def __init__(self, conn: WSManInfo) -> None:
+    def __init__(self, conn: WSManInfo, rp: psrp.SyncRunspacePool) -> None:
         """Initialize the terminal with connection and runspace pool.
 
         Args:
             conn (WSManInfo): The connection information.
+            rp (SyncRunspacePool): The Synchronous Runspace Pool.
 
         """
         self.conn = conn
-        self.rp = None
+        self.rp = rp
         self.ps = None
-        self.username = None
+        self.username = get_command_output(self.rp, "whoami")[0].strip()
         self.pause_keepalive = False
         """
             If True, prevents the keep-alive mechanism from sending commands.
@@ -50,19 +51,12 @@ class Terminal:
             key_bindings=kb,
             complete_while_typing=False,
             complete_style=CompleteStyle.READLINE_LIKE,
+            completer=RemotePathAutoCompleter(rp=self.rp),
         )
 
-    def run(self, rp: psrp.SyncRunspacePool) -> None:
-        """Run the terminal session.
-
-        Args:
-            rp (psrp.SyncRunspacePool): The RunspacePool to use for the terminal.
-
-        """
-        self.rp = rp
-        self.session.completer=RemotePathAutoCompleter(rp=self.rp)
-        self.username = get_command_output(self.rp, "whoami")[0].strip()
-        threading.Thread(target=self.keepalive, name="keep-alive", daemon=True).start()
+    def run(self) -> None:
+        """Run the terminal session."""
+        Thread(target=self.keepalive, name="keep-alive", daemon=True).start()
         while True:
             try:
                 self.pause_keepalive = False
@@ -123,7 +117,7 @@ class Terminal:
                 print_error("Command failed: Invalid character in command.")
 
 
-        thread = threading.Thread(target=_process_input_logic, name=user_input, daemon=True)
+        thread = Thread(target=_process_input_logic, name=user_input, daemon=True)
         thread.start()
         while thread.is_alive():
             thread.join(timeout=0.5)

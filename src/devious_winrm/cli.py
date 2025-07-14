@@ -78,9 +78,9 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
             password=password,
             port=port,
             auth=auth)
-        terminal = Terminal(conn)
         with SyncRunspacePool(conn) as rp:
-            terminal.run(rp)
+            terminal = Terminal(conn, rp)
+            terminal.run()
     except psrp.WSManAuthenticationError:
         error = "Authentication failed. Please check your credentials and try again."
         print_error(error)
