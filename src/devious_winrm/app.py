@@ -95,9 +95,17 @@ class Terminal:
             user_input (str): The input to parse.
 
         """
+        cmd = ""
+        if user_input:
+            cmd = user_input.split()[0]
+
+        if cmd == "exit":
+            # Exit is special as it needs to be called outside of the
+            # thread for it to work properly
+            sys.exit()
 
         def _process_input_logic() -> None:
-            if user_input and user_input.split()[0] in commands:
+            if cmd in commands:
                 run_command(self, user_input)
                 return
 

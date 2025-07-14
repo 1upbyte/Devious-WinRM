@@ -1,7 +1,6 @@
 """File to define commands."""
 from __future__ import annotations
 
-import sys
 from typing import TYPE_CHECKING
 
 import psrp
@@ -68,7 +67,7 @@ def run_command(self: Terminal, user_input: str) -> None:
 @command
 def exit(_self: Terminal, _args: str) -> None:  # noqa: A001
     """Exit the application."""
-    sys.exit(0)
+    # Implemented in app.py
 
 @command
 def help(_self: Terminal, _args: str) -> None:  # noqa: A001
