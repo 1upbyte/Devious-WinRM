@@ -79,15 +79,7 @@ def help(_self: Terminal, _args: str) -> None:  # noqa: A001
 
 @command
 def upload(self: Terminal, args: list[str]) -> None:
-    """Upload a file.
-
-    Usage: upload <local_path> [remote_path].
-
-    Flags: -m , --memory_only <var_name>
-    Stores the file in a variable instead of on disk.
-
-    Large files may struggle to transfer.
-    """
+    """Upload a file. Use --help for usage."""
     epilog = "Large files may struggle to transfer."
     parser = argparse.ArgumentParser("upload", exit_on_error=False, epilog=epilog)
     parser.add_argument("local_path", type=str)
@@ -123,12 +115,7 @@ def upload(self: Terminal, args: list[str]) -> None:
 
 @command
 def download(self: Terminal, args: list[str]) -> None:
-    """Download a file.
-
-    Usage: download <remote_path> [local_path].
-
-    Large files may struggle to transfer.
-    """
+    """Download a file. Use --help for usage."""
     epilog = "Large files may struggle to transfer."
     parser = argparse.ArgumentParser("download", exit_on_error=False, epilog=epilog)
     parser.add_argument("remote_path", type=str)
