@@ -6,6 +6,7 @@ readme = "README.md"
 authors = [
     {name = "Pablo Comino", email = "pablo@pablocomino.com"}
 ]
+requires-python = ">=3.10"
 dependencies = [
     "prompt_toolkit>=3.0.5",
     "impacket==0.12.0",
@@ -33,7 +34,7 @@ include-package-data = true
 devious_winrm = ["*.ps1"]
 
 [tool.ruff]
-select = ["ALL"]
-pyupgrade.keep-runtime-typing = true
-ignore = ["RUF013", "PERF203", "INP001"]
+lint.select = ["ALL"]
+lint.pyupgrade.keep-runtime-typing = true
+lint.ignore = ["RUF013", "PERF203", "INP001"]
 lint.pylint.allow-magic-value-types = ["int", "str"]
