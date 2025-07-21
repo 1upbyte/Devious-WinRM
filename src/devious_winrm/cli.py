@@ -1,5 +1,5 @@
 """Entry point for the CLI application."""
-from typing import Annotated, Optional
+from typing import Annotated
 
 import httpcore
 import psrp
@@ -42,7 +42,7 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
     port: Annotated[int, flags["port"]] = 5985,
     kerberos: Annotated[bool, flags["kerberos"]] = False,  # noqa: FBT002
     nt_hash: Annotated[str, flags["nt_hash"]] = None,
-    dc: Annotated[Optional[str], flags["dc"]]=None,
+    dc: Annotated[str | None, flags["dc"]]=None,
 ) -> None:
     """Parse command line arguments and forward them to the terminal."""
     if nt_hash is not None:
