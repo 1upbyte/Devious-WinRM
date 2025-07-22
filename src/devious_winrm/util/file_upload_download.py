@@ -7,6 +7,7 @@ from functools import partial
 from pathlib import Path
 from random import randint
 from socketserver import TCPServer
+from threading import Event, Thread
 
 LOWER_PORT_BOUND = 1024
 UPPER_PORT_BOUND = 65535
@@ -37,19 +38,27 @@ class SingleFileGETHandler(http.server.SimpleHTTPRequestHandler):
 class MaxAttemptsExceededError(Exception):
     """Exception for too many attempts."""
 
-def run_server(file: Path, file_size: int, port: int) -> None:
+def run_server(file_path: Path, server_active: Event) -> None:
     """Run the HTTP server.
 
     The server will stop after handling the first GET request.
     """
-    GETHandler = partial(SingleFileGETHandler, file, file_size)  # noqa: N806
-    with TCPServer(("", port),
-                    RequestHandlerClass=GETHandler,
-                    bind_and_activate=False) as tcp_socket:
-        tcp_socket.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        tcp_socket.server_bind()
-        tcp_socket.server_activate()
-        tcp_socket.handle_request()
+    port = randint(LOWER_PORT_BOUND, UPPER_PORT_BOUND)  # noqa: S311
+
+    with file_path.open(mode="rb") as file:
+        file_contents = file.read()
+        file_size = file.tell()
+
+        GETHandler = partial(SingleFileGETHandler, file_contents, file_size)  # noqa: N806
+        with TCPServer(("", port),
+                        RequestHandlerClass=GETHandler,
+                        bind_and_activate=False) as tcp_socket:
+            tcp_socket.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            tcp_socket.server_bind()
+            tcp_socket.server_activate()
+            print(f"Running on http://localhost:{port}")
+            server_active.set()
+            tcp_socket.handle_request()
 
 
 
@@ -63,13 +72,15 @@ def upload_file(file_path: Path) -> None:
     """
     attempts = 0
     while attempts < MAX_ATTEMPTS:
-        port = randint(LOWER_PORT_BOUND, UPPER_PORT_BOUND)  # noqa: S311
         file_path = file_path.expanduser().resolve()
         try:
-            with file_path.open(mode="rb") as file:
-                file_contents = file.read()
-                size = file.tell()
-                run_server(file_contents, size, port)
+            server_active = Event()
+            http_server = Thread(target=run_server,
+                                 args=(file_path, server_active),
+                                 name="http-server")
+            http_server.start()
+            server_active.wait()
+            http_server.join()
         except OSError as e:
             # In case port is already being used, try again
             if e.errno == errno.EADDRINUSE:
@@ -82,4 +93,4 @@ def upload_file(file_path: Path) -> None:
     raise MaxAttemptsExceededError(error)
 
 if __name__ == "__main__":
-    upload_file(Path("~/test/1GB.file"))
+    upload_file(Path("~/test/test.txt"))
