@@ -38,3 +38,10 @@ lint.select = ["ALL"]
 lint.pyupgrade.keep-runtime-typing = true
 lint.ignore = ["RUF013", "PERF203", "INP001"]
 lint.pylint.allow-magic-value-types = ["int", "str"]
+
+[tool.ruff.lint.extend-per-file-ignores]
+"tests/**/*.py" = [
+    "S101", # Asserts allowed
+    "ARG", # Unused function args
+    "FBT", # Booleans as positional args
+]
