@@ -3,6 +3,7 @@ import re
 from typing import Never
 from unittest import mock
 
+import pytest
 from prompt_toolkit.document import Document
 
 from devious_winrm.util.completers import RemotePathAutoCompleter
@@ -29,9 +30,6 @@ def mock_completion(_: Never, cmd: str) -> list[str]:
         attrs = match_attrs.group("attrs").strip()
 
     children = ["INITAL"]
-    print("-----")
-    print(f"Directory: '{directory}'")
-    print(f"Prefix: '{prefix}'")
     match directory:
         case ".":
             children = ["test.txt", "file.zip", "folder\\"]
@@ -51,31 +49,26 @@ def mock_completion(_: Never, cmd: str) -> list[str]:
 
     return children
 
-def _check_output(text: str, expected: list[str]) -> None:
-
-    completer = RemotePathAutoCompleter(None)
-    doc = Document(text)
-    completions = completer.get_completions(doc, None)
-    completions = list(completions)
-    for completion, expected_text in zip(completions, expected, strict=True):
-        assert completion.display_text == expected_text
+TEST_CASES = [
+    ("", ["test.txt", "file.zip", "folder"]),
+    ("te", ["test.txt"]),
+    ("f", ["file.zip", "folder"]),
+    ("cd f", ["folder"]),
+    ("C:", ["\\Windows", "\\Users", '\\"Program Files"', '\\"Program Files (x86)"']),
+    ("C:\\Users\\", ["pablo.comino", "1upbyte", "mario"]),
+    ("C:\\Users\\\\\\\\", ["pablo.comino", "1upbyte", "mario"]),
+    ("C:\\Users\\\\\\\\pa", ["pablo.comino"]),
+    ("cd f", ["folder"]),
+]
 
 @mock.patch("devious_winrm.util.completers.get_command_output", wraps=mock_completion)
-def test_remote_path_completion(mocked_cmd: mock.Mock) -> None:
-    """Mock util.get_command_output()."""
-    #TODO: Use parameterize
-    _check_output("", ["test.txt", "file.zip", "folder"])
-    _check_output("te", ["test.txt"])
-    _check_output("f", ["file.zip", "folder"])
-    _check_output("cd f", ["folder"])
-    _check_output("C:", ["\\Windows", "\\Users",
-                        '\\"Program Files"', '\\"Program Files (x86)"'])
-    _check_output("C:\\Users\\", ["pablo.comino", "1upbyte", "mario"])
-    _check_output("C:\\Users\\\\\\\\", ["pablo.comino", "1upbyte", "mario"])
-    _check_output("C:\\Users\\\\\\\\pa", ["pablo.comino"])
-    _check_output("cd f", ["folder"])
-
-'\\"Program Files"'
-'\\"Program Files"\\'
-if __name__ == "__main__":
-    test_remote_path_completion()
+@pytest.mark.parametrize(("text_input", "expected_output"), TEST_CASES)
+def test_remote_path_completion(mocked_cmd: mock.Mock,
+                                text_input: str, expected_output: list[str]) -> None:
+    """Test util.completers."""
+    completer = RemotePathAutoCompleter(None)
+    doc = Document(text_input)
+    completions = completer.get_completions(doc, None)
+    completions = list(completions)
+    for completion, expected_text in zip(completions, expected_output, strict=True):
+        assert completion.display_text == expected_text
