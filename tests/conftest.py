@@ -1,10 +1,15 @@
 """Provide fixtures for tests."""
 import os
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 from dotenv import load_dotenv
 from psrp import SyncPowerShell, SyncRunspacePool, WSManInfo
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
 
 load_dotenv()
 
@@ -58,5 +63,9 @@ def connection() -> WSManInfo:
 
     return conn
 
-
+@pytest.fixture
+def rp(connection: WSManInfo) -> "Iterator[SyncRunspacePool]":
+    """Create a RunspacePool for the test."""
+    with SyncRunspacePool(connection) as rp:
+        yield rp
 
