@@ -5,11 +5,17 @@ from typing import TYPE_CHECKING
 
 import pytest
 from dotenv import load_dotenv
+from prompt_toolkit import PromptSession
+from prompt_toolkit.input import create_pipe_input
 from psrp import SyncPowerShell, SyncRunspacePool, WSManInfo
+
+from devious_winrm.app import Terminal
+from devious_winrm.util.keybinds import kb
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
+    from prompt_toolkit.input import PipeInput
 
 load_dotenv()
 
@@ -69,3 +75,16 @@ def rp(connection: WSManInfo) -> "Iterator[SyncRunspacePool]":
     with SyncRunspacePool(connection) as rp:
         yield rp
 
+@pytest.fixture
+def dummy_terminal(
+    connection: WSManInfo,
+    rp: SyncRunspacePool,
+) -> "Iterator[tuple[Terminal, PipeInput]]":
+    """Create a Terminal with dummy input and output for prompt session testing."""
+    with create_pipe_input() as inp:
+        session = PromptSession(
+                key_bindings=kb,
+                input=inp,
+            )
+        terminal = Terminal(connection, rp, session)
+        yield terminal, inp
