@@ -38,6 +38,18 @@ Alternatively, use pipx or pip:
 
 `pip install devious-winrm`
 
+## Contributing
+Thanks for taking an interest in contributing! Developing features for Devious-WinRM requires some extra dependencies for linting and testing. Here are the general steps to a dev environment:
+
+[!WARNING] On Windows, the `impacket` dependency (used for Kerberos) <u>will</u> trigger Defender. It is recommended to use a VM with Defender off, or to use Linux/MacOS.
+
+1. Clone the repository `git clone git@github.com:1upbyte/Devious-WinRM.git &&& cd Devious-WinRM`.
+2. Create a new branch: `git checkout -b featureNameHere`.
+3. Install the depedencies: `pip install -e . --group dev`.
+
+Once your contribution is complete, run `ruff check` and `pytest` against it, using a server if your change requires it. Once all linting/testing passes, make a PR!
+
+
 ## Credits
 - [Evil-WinRM](https://github.com/Hackplayers/evil-winrm)  - This goes without saying, but Evil-WinRM is an incredible tool. It was the primary inspiration for this project.
 - [pypsrp](https://github.com/jborean93/pypsrp) - A tremendously well-featured library for Powershell Remote in Python. Super friendly developer as well!
