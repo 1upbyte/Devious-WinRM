@@ -5,10 +5,16 @@ import httpcore
 import psrp
 import typer
 from impacket.krb5.kerberosv5 import KerberosError
+from prompt_toolkit import PromptSession
+from prompt_toolkit.lexers import PygmentsLexer
+from prompt_toolkit.shortcuts import CompleteStyle
 from psrp import SyncRunspacePool, WSManInfo
+from pygments.lexers.shell import PowerShellLexer
 
 from devious_winrm.app import Terminal
+from devious_winrm.util.completers import RemotePathAutoCompleter
 from devious_winrm.util.kerberos import prepare_kerberos
+from devious_winrm.util.keybinds import kb
 from devious_winrm.util.printers import print_error, print_ft, print_info
 
 LM_HASH: str = "aad3b435b51404eeaad3b435b51404ee"
@@ -78,8 +84,17 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
             password=password,
             port=port,
             auth=auth)
+
         with SyncRunspacePool(conn) as rp:
-            terminal = Terminal(conn, rp)
+            session = PromptSession(
+                lexer=PygmentsLexer(PowerShellLexer),
+                refresh_interval=1,
+                key_bindings=kb,
+                complete_while_typing=False,
+                complete_style=CompleteStyle.READLINE_LIKE,
+                completer=RemotePathAutoCompleter(rp=rp),
+            )
+            terminal = Terminal(conn, rp, session)
             terminal.run()
     except psrp.WSManAuthenticationError:
         error = "Authentication failed. Please check your credentials and try again."

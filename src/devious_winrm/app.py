@@ -10,28 +10,29 @@ from xml.etree.ElementTree import ParseError
 
 import psrp
 from prompt_toolkit import HTML, PromptSession
-from prompt_toolkit.lexers import PygmentsLexer
-from prompt_toolkit.shortcuts import CompleteStyle
 from psrp import WSManInfo
 from psrpcore.types import PSInvocationState
-from pygments.lexers.shell import PowerShellLexer
 
 from devious_winrm.util.commands import commands, run_command
-from devious_winrm.util.completers import RemotePathAutoCompleter
 from devious_winrm.util.get_command_output import get_command_output
-from devious_winrm.util.keybinds import kb
 from devious_winrm.util.printers import print_error, print_ft, print_info
 
 
 class Terminal:
     """Terminal for handling connection and command execution."""
 
-    def __init__(self, conn: WSManInfo, rp: psrp.SyncRunspacePool) -> None:
-        """Initialize the terminal with connection and runspace pool.
+    def __init__(
+        self,
+        conn: WSManInfo,
+        rp: psrp.SyncRunspacePool,
+        session: PromptSession,
+    ) -> None:
+        """Initialize the terminal with connection, runspace pool, and prompt session.
 
         Args:
             conn (WSManInfo): The connection information.
             rp (SyncRunspacePool): The Synchronous Runspace Pool.
+            session (PromptSession): The prompt session to use for user input.
 
         """
         self.conn = conn
@@ -44,15 +45,8 @@ class Terminal:
             Having the keep-alive be sent while another command is executing
             can lead to issues.
         """
-        self.session = PromptSession(
-            lexer=PygmentsLexer(PowerShellLexer),
-            bottom_toolbar=self.bottom_toolbar,
-            refresh_interval=1,
-            key_bindings=kb,
-            complete_while_typing=False,
-            complete_style=CompleteStyle.READLINE_LIKE,
-            completer=RemotePathAutoCompleter(rp=self.rp),
-        )
+        self.session = session
+        self.session.bottom_toolbar = self.bottom_toolbar
 
     def run(self) -> None:
         """Run the terminal session."""
