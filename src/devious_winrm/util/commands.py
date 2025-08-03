@@ -5,14 +5,14 @@ from typing import TYPE_CHECKING
 
 import psrp
 
+from devious_winrm.util.file_upload_download import upload_file
 from devious_winrm.util.printers import print_error, print_info
-from devious_winrm.util.upload_to_memory import upload_to_memory
 
 if TYPE_CHECKING:
     from devious_winrm.app import Terminal
 import argparse
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
 
 commands = {}
 
@@ -97,16 +97,8 @@ def upload(self: Terminal, args: list[str]) -> None:
         local_path: Path = Path(parsed_args.local_path)
         destination: str = parsed_args.destination or local_path.name
         in_memory = destination.startswith("$") if destination else False
-        if in_memory:
-            destination = destination[1:] # Remove the $ prefix
-            var_name = upload_to_memory(self.rp, local_path, destination)
-            print_info(f"Uploaded {local_path} to ${var_name}")
-        else:
-            # Uploading a file to disk uses a secondary RunspacePool, so the keep-alive
-            # from the main one won't interfere.
-            self.pause_keepalive = False
-            final_path = psrp.copy_file(self.conn, local_path, destination)
-            print_info(f"Uploaded {local_path} to {final_path}")
+        final_path = upload_file(self, local_path, destination)
+        print_info(f"Uploaded {local_path} to {final_path}")
     except FileNotFoundError:
         print_error(f"No such file or directory: {local_path}")
     except (psrp.PSRPError, OSError) as e:
