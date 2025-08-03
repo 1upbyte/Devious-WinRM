@@ -113,10 +113,12 @@ class Terminal:
             self.ps.streams.error.data_added = print_error
             try:
                 self.ps.invoke(output_stream=output)
-            except (psrp.PipelineStopped, psrp.PipelineFailed) as e:
+            except psrp.PipelineFailed as e:
                 print_error(e)
             except ParseError:
                 print_error("Command failed: Invalid character in command.")
+            except psrp.PipelineStopped:
+                pass
 
 
         thread = Thread(target=_process_input_logic, name=user_input, daemon=True)
