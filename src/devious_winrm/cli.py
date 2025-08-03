@@ -78,7 +78,7 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
             password=password,
             port=port,
             auth=auth)
-        with SyncRunspacePool(conn) as rp:
+        with SyncRunspacePool(conn, max_runspaces=5) as rp:
             terminal = Terminal(conn, rp)
             terminal.run()
     except psrp.WSManAuthenticationError:

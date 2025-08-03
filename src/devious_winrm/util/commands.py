@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import psrp
 
+from devious_winrm.util.get_command_output import get_command_output
 from devious_winrm.util.printers import print_error, print_info
 from devious_winrm.util.upload_to_memory import upload_to_memory
 
@@ -102,10 +103,8 @@ def upload(self: Terminal, args: list[str]) -> None:
             var_name = upload_to_memory(self.rp, local_path, destination)
             print_info(f"Uploaded {local_path} to ${var_name}")
         else:
-            # Uploading a file to disk uses a secondary RunspacePool, so the keep-alive
-            # from the main one won't interfere.
             self.pause_keepalive = False
-            final_path = psrp.copy_file(self.conn, local_path, destination)
+            final_path = psrp.copy_file(self.rp, local_path, destination)
             print_info(f"Uploaded {local_path} to {final_path}")
     except FileNotFoundError:
         print_error(f"No such file or directory: {local_path}")
