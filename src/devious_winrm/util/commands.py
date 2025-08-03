@@ -5,15 +5,15 @@ from typing import TYPE_CHECKING
 
 import psrp
 
-from devious_winrm.util.get_command_output import get_command_output
 from devious_winrm.util.printers import print_error, print_info
 from devious_winrm.util.upload_to_memory import upload_to_memory
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from devious_winrm.app import Terminal
 import argparse
 from pathlib import Path
-from typing import Callable
 
 commands = {}
 

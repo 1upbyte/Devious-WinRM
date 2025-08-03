@@ -55,7 +55,6 @@ class Terminal:
         Thread(target=self.keepalive, name="keep-alive", daemon=True).start()
         while True:
             try:
-                thread = Thread()
                 user_input = self.prompt().strip()
                 self.process_input(user_input)
             except (SystemExit, EOFError):
@@ -120,7 +119,7 @@ class Terminal:
                 print_error("Command failed: Invalid character in command.")
 
 
-        thread = Thread(target=_process_input_logic, name=user_input, daemon=True, )
+        thread = Thread(target=_process_input_logic, name=user_input, daemon=True)
         thread.start()
         while thread.is_alive():
             thread.join(timeout=0.5)
