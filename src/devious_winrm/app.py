@@ -11,6 +11,7 @@ from xml.etree.ElementTree import ParseError
 import psrp
 from prompt_toolkit import HTML, PromptSession
 from prompt_toolkit.lexers import PygmentsLexer
+from prompt_toolkit.output.color_depth import ColorDepth
 from prompt_toolkit.shortcuts import CompleteStyle
 from psrp import WSManInfo
 from psrpcore.types import PSInvocationState
@@ -52,6 +53,7 @@ class Terminal:
             complete_while_typing=False,
             complete_style=CompleteStyle.READLINE_LIKE,
             completer=RemotePathAutoCompleter(rp=self.rp),
+            color_depth=ColorDepth.DEPTH_24_BIT,
         )
 
     def run(self) -> None:
