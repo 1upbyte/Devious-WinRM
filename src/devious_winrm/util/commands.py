@@ -96,6 +96,11 @@ def upload(self: Terminal, args: list[str]) -> None:
         return
     try:
         local_path: Path = Path(parsed_args.local_path)
+        # Since psrp.copy_file uses open() instead of Path.open()
+        # it has strange side effects when a file isn't found.
+        # Eventually I'll write my own copy_file() function.
+        if not local_path.exists():
+            raise FileNotFoundError  # noqa: TRY301
         destination: str = parsed_args.destination or local_path.name
         in_memory = destination.startswith("$") if destination else False
         if in_memory:
@@ -103,7 +108,6 @@ def upload(self: Terminal, args: list[str]) -> None:
             var_name = upload_to_memory(self.rp, local_path, destination)
             print_info(f"Uploaded {local_path} to ${var_name}")
         else:
-            self.pause_keepalive = False
             final_path = psrp.copy_file(self.rp, local_path, destination)
             print_info(f"Uploaded {local_path} to {final_path}")
     except FileNotFoundError:
@@ -128,12 +132,9 @@ def download(self: Terminal, args: list[str]) -> None:
         return
 
     try:
-        # Downloading a file uses a secondary RunspacePool, so the keep-alive
-        # from the main one won't interfere.
-        self.pause_keepalive = False
         remote_path: str = parsed_args.remote_path
         local_path: str = parsed_args.local_path or remote_path.split("\\")[-1]
-        final_path = psrp.fetch_file(self.conn, remote_path, local_path)
+        final_path = psrp.fetch_file(self.rp, remote_path, local_path)
         print_info(f"Downloaded {remote_path} to {final_path}")
     except FileNotFoundError:
         print_error(f"No such file or directory: {local_path}")
