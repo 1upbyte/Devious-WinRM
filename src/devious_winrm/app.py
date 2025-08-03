@@ -39,12 +39,6 @@ class Terminal:
         self.rp = rp
         self.ps = None
         self.username = get_command_output(self.rp, "whoami")[0].strip()
-        self.pause_keepalive = False
-        """
-            If True, prevents the keep-alive mechanism from sending commands.
-            Having the keep-alive be sent while another command is executing
-            can lead to issues.
-        """
         self.session = PromptSession(
             lexer=PygmentsLexer(PowerShellLexer),
             bottom_toolbar=self.bottom_toolbar,
@@ -61,9 +55,8 @@ class Terminal:
         Thread(target=self.keepalive, name="keep-alive", daemon=True).start()
         while True:
             try:
-                self.pause_keepalive = False
+                thread = Thread()
                 user_input = self.prompt().strip()
-                self.pause_keepalive = True
                 self.process_input(user_input)
             except (SystemExit, EOFError):
                 print_info("Exiting the application...")
@@ -127,7 +120,7 @@ class Terminal:
                 print_error("Command failed: Invalid character in command.")
 
 
-        thread = Thread(target=_process_input_logic, name=user_input, daemon=True)
+        thread = Thread(target=_process_input_logic, name=user_input, daemon=True, )
         thread.start()
         while thread.is_alive():
             thread.join(timeout=0.5)
@@ -147,8 +140,6 @@ class Terminal:
     def keepalive(self) -> None:
         """Keep the connection alive by sending a repeat no-op command."""
         while True:
-            while self.pause_keepalive:
-                time.sleep(1)
             ps = psrp.SyncPowerShell(self.rp)
             ps.add_script("").invoke()
             time.sleep(60)
