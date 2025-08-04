@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import psrp
 
+from devious_winrm.util.invoke_in_memory import invoke_in_memory
 from devious_winrm.util.printers import print_error, print_info
 from devious_winrm.util.upload_to_memory import upload_to_memory
 
@@ -140,3 +141,24 @@ def download(self: Terminal, args: list[str]) -> None:
         print_error(f"No such file or directory: {local_path}")
     except (psrp.PSRPError, OSError) as e:
         print_error(f"Failed to download file: {e}")
+
+@command
+def invoke(self: Terminal, args: list[str]) -> None:
+    """Invoke a .NET binary in memory."""
+    epilog = "Large files may have issues uploading."
+    parser = argparse.ArgumentParser("invoke", exit_on_error=False, epilog=epilog)
+    parser.add_argument("local_path", type=str)
+    parser.add_argument("args", nargs=argparse.REMAINDER,
+                        help="Comma separated arguments to pass to the binary.")
+    try:
+            parsed_args = parser.parse_args(args)
+    except argparse.ArgumentError as e:
+        print_error(e)
+        print_error("Use --help for usage details.")
+        return
+    except SystemExit: # --help raises SystemExit
+        return
+
+    upload(self, [parsed_args.local_path, "$bin"])
+
+    invoke_in_memory(self.rp, parsed_args.args)
