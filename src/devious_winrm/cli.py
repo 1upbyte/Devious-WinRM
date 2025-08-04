@@ -14,7 +14,7 @@ from devious_winrm.util.printers import print_error, print_ft, print_info
 LM_HASH: str = "aad3b435b51404eeaad3b435b51404ee"
 
 print_ft("")
-print_info("Devious-WinRM by 1upbyte")
+print_info("Devious-WinRM v1.1.0 by 1upbyte")
 
 
 desc = {}
