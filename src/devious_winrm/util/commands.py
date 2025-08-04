@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import psrp
 
+from devious_winrm.util.file_upload_download import copy_file, fetch_file
 from devious_winrm.util.get_command_output import get_command_output
 from devious_winrm.util.invoke_in_memory import invoke_in_memory
 from devious_winrm.util.printers import print_error, print_info
@@ -93,16 +94,11 @@ def upload(self: Terminal, args: list[str]) -> None | bool:
     except argparse.ArgumentError as e:
         print_error(e)
         print_error("Use --help for usage details.")
-        return
+        return None
     except SystemExit: # --help raises SystemExit
-        return
+        return None
     try:
         local_path: Path = Path(parsed_args.local_path)
-        # Since psrp.copy_file uses open() instead of Path.open()
-        # it has strange side effects when a file isn't found.
-        # Eventually I'll write my own copy_file() function.
-        if not local_path.exists():
-            raise FileNotFoundError  # noqa: TRY301
         destination: str = parsed_args.destination or local_path.name
         in_memory = destination.startswith("$") if destination else False
         if in_memory:
@@ -110,7 +106,7 @@ def upload(self: Terminal, args: list[str]) -> None | bool:
             var_name = upload_to_memory(self.rp, local_path, destination)
             print_info(f"Uploaded {local_path} to ${var_name}")
         else:
-            final_path = psrp.copy_file(self.rp, local_path, destination)
+            final_path = copy_file(self.rp, local_path, destination)
             print_info(f"Uploaded {local_path} to {final_path}")
     except FileNotFoundError:
         print_error(f"No such file or directory: {local_path}")
@@ -137,8 +133,8 @@ def download(self: Terminal, args: list[str]) -> None:
 
     try:
         remote_path: str = parsed_args.remote_path
-        local_path: str = parsed_args.local_path or remote_path.split("\\")[-1]
-        final_path = psrp.fetch_file(self.rp, remote_path, local_path)
+        local_path: Path = Path(parsed_args.local_path or remote_path.split("\\")[-1])
+        final_path = fetch_file(self.rp, remote_path, local_path)
         print_info(f"Downloaded {remote_path} to {final_path}")
     except FileNotFoundError:
         print_error(f"No such file or directory: {local_path}")
