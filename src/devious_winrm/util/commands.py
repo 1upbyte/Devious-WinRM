@@ -80,7 +80,7 @@ def help(_self: Terminal, _args: str) -> None:  # noqa: A001
         print_info(f"{cmd}: {details['description']}")
 
 @command
-def upload(self: Terminal, args: list[str]) -> None:
+def upload(self: Terminal, args: list[str]) -> None | bool:
     """Upload a file. Use --help for usage."""
     epilog = "Large files may struggle to transfer."
     parser = argparse.ArgumentParser("upload", exit_on_error=False, epilog=epilog)
@@ -116,6 +116,8 @@ def upload(self: Terminal, args: list[str]) -> None:
         print_error(f"No such file or directory: {local_path}")
     except (psrp.PSRPError, OSError) as e:
         print_error(f"Failed to upload file: {e}")
+    else:
+        return True
 
 @command
 def download(self: Terminal, args: list[str]) -> None:
@@ -169,9 +171,11 @@ def invoke(self: Terminal, args: list[str]) -> None:
 
     cached = get_command_output(self.rp, f"Get-Variable {var_name}")
 
-    if cached and not parsed_args.no_cache:
+    if cached and cached[0] and not parsed_args.no_cache:
         print_info("Using cached binary.")
     else:
-        upload(self, [parsed_args.local_path, f"${var_name}"])
+        success = upload(self, [parsed_args.local_path, f"${var_name}"])
+        if not success:
+            return # Errors will be printed by upload()
 
     invoke_in_memory(self.rp, var_name, parsed_args.args)

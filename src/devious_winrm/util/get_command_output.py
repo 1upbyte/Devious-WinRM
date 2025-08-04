@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import psrp
 
+from devious_winrm.util.printers import print_error
+
 
 def get_command_output(rp: psrp.SyncRunspacePool, command: str) -> list[str]:
     """Execute a command in the PowerShell runspace and return the output.
@@ -18,6 +20,10 @@ def get_command_output(rp: psrp.SyncRunspacePool, command: str) -> list[str]:
     """
     ps = psrp.SyncPowerShell(rp)
     ps.add_script(command)
-    output = ps.invoke()
+    try:
+        output = ps.invoke()
+    except psrp.PSRPError as e:
+        print_error(e)
+        return [""]
     return list(map(str, output))
 

@@ -12,7 +12,7 @@ param (
 $outputWriter = New-Object System.IO.StringWriter
 $errorWriter = New-Object System.IO.StringWriter
 [Console]::SetOut($outputWriter)
-# [Console]::SetError($errorWriter)
+[Console]::SetError($errorWriter)
 
 $args = $Arguments.split(",")
 
@@ -28,6 +28,6 @@ $invocationArgs = , $args
 $entryPoint.Invoke($null, $invocationArgs)
 
 $capturedOutput = $outputWriter.ToString()
-# $capturedError = $errorWriter.ToString()
+$capturedError = $errorWriter.ToString()
 Write-Output $capturedOutput
-# Write-Error $capturedError
+Write-Error $capturedError
