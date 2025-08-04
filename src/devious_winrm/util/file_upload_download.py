@@ -9,10 +9,18 @@ import tempfile
 import typing as t
 from pathlib import Path
 
+from prompt_toolkit.shortcuts import ProgressBar
+from prompt_toolkit.shortcuts.progress_bar import formatters
 from psrp import PSRPError, SyncPowerShell, SyncPSDataCollection, SyncRunspacePool
 
 from devious_winrm.util.misc import get_pwsh_script
 
+pb_format = [
+    formatters.Percentage(),
+    formatters.Text(" "),
+    formatters.Bar(sym_a="#", sym_b="#", sym_c="."),
+    formatters.Text("  "),
+]
 
 def copy_file(
     rp: SyncRunspacePool,
@@ -46,9 +54,12 @@ def copy_file(
     def read_buffer(path: Path, buffer_size: int) -> t.Iterator[bytes]:
         sha1 = hashlib.sha1()
 
-        with path.open(mode="rb") as fd:
+        with path.open(mode="rb") as fd, ProgressBar(formatters=pb_format) as pb:
+            file_size = path.stat().st_size
+            progress = pb(total=file_size, remove_when_done=True)
             for data in iter((lambda: fd.read(buffer_size)), b""):
                 sha1.update(data)
+                progress.items_completed += len(data)
                 yield data
 
         yield sha1.hexdigest().encode("utf-8")
