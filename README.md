@@ -18,10 +18,11 @@ Under the hood, Devious-WinRM is not directly based on WinRM. It is instead buil
 - [x] Syntax highlighting
 - [x] Ctrl+C command interupt
 - [x] Remote path completion
+- [x] In-Memory .NET loader
+- [ ] In-Memory Powershell loader
 - [ ] Certificate auth
 - [ ] SSL auth
 - [ ] Logging
-- [ ] In-Memory .NET/Powershell loader
 - [ ] Maybe: Local logon token upgrader via RunasCs 
 
 
