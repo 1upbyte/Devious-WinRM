@@ -41,11 +41,11 @@ def _get_pwsh_script(
 
 script = _get_pwsh_script("Invoke-In-Memory.ps1")
 
-def invoke_in_memory(rp: psrp.SyncRunspacePool, args: list[str]) -> None:
+def invoke_in_memory(rp: psrp.SyncRunspacePool, var_name: str, args: list[str]) -> None:
     """Invoke a .NET binary in memory."""
     ps = psrp.SyncPowerShell(rp)
     ps.add_script(script)
-    print_info("Invoking binary in memory...")
+    ps.add_parameter("VariableName", var_name)
     if args:
         ps.add_parameter("Arguments", " ".join(args))
     ps.add_command("Out-String").add_parameter("Stream", value=True)
@@ -55,6 +55,7 @@ def invoke_in_memory(rp: psrp.SyncRunspacePool, args: list[str]) -> None:
     ps.streams.error.data_added = print_error
     ps.streams.information.data_added = print_ft
     try:
+        print_info("Invoking binary in memory...")
         ps.invoke(output_stream=output)
     except (psrp.PipelineStopped, psrp.PipelineFailed) as e:
         print_error(e)

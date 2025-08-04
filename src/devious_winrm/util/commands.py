@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import psrp
 
+from devious_winrm.util.get_command_output import get_command_output
 from devious_winrm.util.invoke_in_memory import invoke_in_memory
 from devious_winrm.util.printers import print_error, print_info
 from devious_winrm.util.upload_to_memory import upload_to_memory
@@ -144,12 +145,17 @@ def download(self: Terminal, args: list[str]) -> None:
 
 @command
 def invoke(self: Terminal, args: list[str]) -> None:
-    """Invoke a .NET binary in memory."""
+    """Invoke a .NET binary in memory. Use --help for usage."""
     epilog = "Large files may have issues uploading."
     parser = argparse.ArgumentParser("invoke", exit_on_error=False, epilog=epilog)
     parser.add_argument("local_path", type=str)
+    parser.add_argument(
+        "-c", "--no_cache",
+        action="store_true",
+        help="re-upload the binary instead of using the cached copy (Default: False).",
+    )
     parser.add_argument("args", nargs=argparse.REMAINDER,
-                        help="Comma separated arguments to pass to the binary.")
+                        help="comma separated arguments to pass to the binary.")
     try:
             parsed_args = parser.parse_args(args)
     except argparse.ArgumentError as e:
@@ -159,6 +165,13 @@ def invoke(self: Terminal, args: list[str]) -> None:
     except SystemExit: # --help raises SystemExit
         return
 
-    upload(self, [parsed_args.local_path, "$bin"])
+    var_name = Path(parsed_args.local_path).name
 
-    invoke_in_memory(self.rp, parsed_args.args)
+    cached = get_command_output(self.rp, f"Get-Variable {var_name}")
+
+    if cached and not parsed_args.no_cache:
+        print_info("Using cached binary.")
+    else:
+        upload(self, [parsed_args.local_path, f"${var_name}"])
+
+    invoke_in_memory(self.rp, var_name, parsed_args.args)

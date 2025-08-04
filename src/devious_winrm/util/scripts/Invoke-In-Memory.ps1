@@ -3,7 +3,10 @@
 
 param (
     [Parameter()]
-    [string]$Arguments = ""
+    [string]$Arguments = "",
+
+    [Parameter(Mandatory = $true)]
+    [string]$VariableName
 )
 
 $outputWriter = New-Object System.IO.StringWriter
@@ -17,7 +20,7 @@ if ([string]::IsNullOrEmpty($args)) {
     # If there are no arguments, create an empty string array.
     $args = [string[]]@()
 }
-
+$bin = (Get-Variable $VariableName).Value
 $assembly = [System.Reflection.Assembly]::Load($bin)
 $entryPoint = $assembly.EntryPoint
 $invocationArgs = , $args
