@@ -5,9 +5,10 @@ import httpcore
 import psrp
 import typer
 from impacket.krb5.kerberosv5 import KerberosError
-from psrp import SyncRunspacePool, WSManInfo
+from psrp import SyncRunspacePool
 
 from devious_winrm.app import Terminal
+from devious_winrm.psrp_fix._connection.wsman import WSManInfoFix as WSManInfo
 from devious_winrm.util.kerberos import prepare_kerberos
 from devious_winrm.util.printers import print_error, print_ft, print_info
 

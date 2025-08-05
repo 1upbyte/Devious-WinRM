@@ -38,3 +38,4 @@ lint.select = ["ALL"]
 lint.pyupgrade.keep-runtime-typing = true
 lint.ignore = ["RUF013", "PERF203", "INP001"]
 lint.pylint.allow-magic-value-types = ["int", "str"]
+extend-exclude = ["psrp_fix"]
