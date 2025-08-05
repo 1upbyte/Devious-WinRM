@@ -1,27 +1,36 @@
 # Copyright: (c) 2022, Jordan Borean (@jborean93) <jborean93@gmail.com>
 # MIT License (see LICENSE or https://opensource.org/licenses/MIT)
-# Adapted by Pablo Comino (@1upbyte) <pablo@pablocomino.com> 
-# Writes a file to an in-memory variable and returns the variable name.
+# Edits: Pablo Comino (@1upbyte) - Adding progress bars
 [CmdletBinding()]
 param (
-    [Parameter(ValueFromPipeline = $true)]
-    [byte[]]
-    $InputObject,
-
     [Parameter(Mandatory = $true, Position = 0)]
     [string]
-    $variableName
-)
+    $Path,
 
+    [Parameter(ValueFromPipeline = $true)]
+    [byte[]]
+    $InputObject
+)
 
 begin {
     $ErrorActionPreference = "Stop"
     $WarningPreference = "Continue"
+    $tempPath = [System.IO.Path]::GetTempFileName()
+    $fd = [System.IO.File]::Create($tempPath)
+    Write-Verbose -Message "Creating remote temp file at '$tempPath'"
 
     $algo = [System.Security.Cryptography.SHA1CryptoServiceProvider]::Create()
     $bytes = $null
     $expectedHash = ""
-    $memoryStream = New-Object System.IO.MemoryStream
+
+    # Makes sure relative paths are resolved to an absolute path based on
+    # the current location.
+    $Path = [System.Environment]::ExpandEnvironmentVariables($Path)
+    $Path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+    $parentDir = Split-Path -Path $Path -Parent
+    if (-not (Test-Path -LiteralPath $parentDir)) {
+        throw "Target path directory '$parentDir' does not exist"
+    }
 
     $bindingFlags = [System.Reflection.BindingFlags]'NonPublic, Instance'
     Function Get-Property {
@@ -116,24 +125,38 @@ begin {
     # each input to the next run until the final input is reach (checksum of
     # the file) which is processed in end.
     if ($null -ne $bytes) {
-        $memoryStream.Write($bytes, 0, $bytes.Length)
+        $fd.Write($bytes, 0, $bytes.Length)
         $algo.TransformBlock($bytes, 0, $bytes.Length, $bytes, 0) > $null
     }
     # Pwsh v2 can't seem to use the bound parameter name, so just use $_.
     $bytes = $_
-    Write-Verbose $bytes.Length
 } end {
-    
+    $fd.Close()
 
-    $expectedHash = [System.Text.Encoding]::UTF8.GetString($bytes)
-    $algo.TransformFinalBlock($bytes, 0, 0) > $null
-    $actualHash = [System.BitConverter]::ToString($algo.Hash)
-    $actualHash = $actualHash.Replace("-", "").ToLowerInvariant()
+    try {
+        $dest = New-Object -TypeName System.IO.FileInfo -ArgumentList $Path
 
-    Write-Verbose -Message "Copy expected hash $expectedHash - actual hash $actualHash"
-    if ($actualHash -ne $expectedHash) {
-        throw "Transport failure, hash mismatch`r`nActual: $actualHash`r`nExpected: $expectedHash"
+        $expectedHash = [System.Text.Encoding]::UTF8.GetString($bytes)
+        $algo.TransformFinalBlock($bytes, 0, 0) > $null
+        $actualHash = [System.BitConverter]::ToString($algo.Hash)
+        $actualHash = $actualHash.Replace("-", "").ToLowerInvariant()
+
+        Write-Verbose -Message "Copy expected hash $expectedHash - actual hash $actualHash"
+        if ($actualHash -ne $expectedHash) {
+            throw "Transport failure, hash mismatch`r`nActual: $actualHash`r`nExpected: $expectedHash"
+        }
+
+        # Move the temp file to the actual dest location and return the
+        # absolute path back to the client. Note that we always attempt a
+        # delete first since the move operation can fail if the target is
+        # located on a different volume and already exists.
+        Write-Verbose -Message "Moving copied file to final path '$Path'"
+        [System.IO.File]::Delete($Path)
+        [System.IO.File]::Move($tempPath, $Path)
+        $dest.FullName
     }
-    New-Variable -Name $variableName -Force -Value $memoryStream.ToArray()
-    "`$$variableName"
+    finally {
+        # Note: If the file to be deleted does not exist, no exception is thrown.
+        [System.IO.File]::Delete($tempPath)
+    }
 }
