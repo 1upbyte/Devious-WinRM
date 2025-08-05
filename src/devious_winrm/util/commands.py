@@ -9,7 +9,6 @@ from devious_winrm.util.file_upload_download import copy_file, fetch_file
 from devious_winrm.util.get_command_output import get_command_output
 from devious_winrm.util.invoke_in_memory import invoke_in_memory
 from devious_winrm.util.printers import print_error, print_info
-from devious_winrm.util.upload_to_memory import upload_to_memory
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -100,14 +99,8 @@ def upload(self: Terminal, args: list[str]) -> None | bool:
     try:
         local_path: Path = Path(parsed_args.local_path)
         destination: str = parsed_args.destination or local_path.name
-        in_memory = destination.startswith("$") if destination else False
-        if in_memory:
-            destination = destination[1:] # Remove the $ prefix
-            var_name = upload_to_memory(self.rp, local_path, destination)
-            print_info(f"Uploaded {local_path} to ${var_name}")
-        else:
-            final_path = copy_file(self.rp, local_path, destination)
-            print_info(f"Uploaded {local_path} to {final_path}")
+        final_dest = copy_file(self.rp, local_path, destination)
+        print_info(f"Uploaded {local_path} to {final_dest}")
     except FileNotFoundError:
         print_error(f"No such file or directory: {local_path}")
     except (psrp.PSRPError, OSError) as e:

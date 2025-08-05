@@ -1,7 +1,8 @@
 # ruff: noqa: S324
 """File upload/download utilities.
 
-Credit to @jborean93 for original code. This is a modification to add progress bars.
+Credit to @jborean93 for original code. This is a modification to add progress bars and\
+an option to copy a file to a variable instead of to disk.
 """
 import hashlib
 import shutil
@@ -66,10 +67,12 @@ def copy_file(
         yield sha1.hexdigest().encode("utf-8")
 
     ps = SyncPowerShell(rp)
-    ps.add_script(get_pwsh_script("copy.ps1"))
-    ps.add_parameters(
-        Path=dest,
-    )
+    if dest.startswith("$"):
+        ps.add_script(get_pwsh_script("UploadTo-Memory.ps1"))
+        ps.add_parameter("variableName", dest[1:])
+    else:
+        ps.add_script(get_pwsh_script("copy.ps1"))
+        ps.add_parameters(Path=dest)
 
     output = ps.invoke(
         input_data=read_buffer(src_path, rp.max_payload_size),

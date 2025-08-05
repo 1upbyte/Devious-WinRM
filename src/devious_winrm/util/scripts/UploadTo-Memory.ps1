@@ -135,5 +135,5 @@ begin {
         throw "Transport failure, hash mismatch`r`nActual: $actualHash`r`nExpected: $expectedHash"
     }
     New-Variable -Name $variableName -Force -Value $memoryStream.ToArray()
-    $variableName
+    "`$$variableName"
 }
