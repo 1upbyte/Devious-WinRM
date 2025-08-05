@@ -4,7 +4,6 @@ from __future__ import annotations
 import datetime
 import shutil
 import sys
-import time
 from threading import Thread
 from xml.etree.ElementTree import ParseError
 
@@ -52,7 +51,6 @@ class Terminal:
 
     def run(self) -> None:
         """Run the terminal session."""
-        Thread(target=self.keepalive, name="keep-alive", daemon=True).start()
         while True:
             try:
                 user_input = self.prompt().strip()
@@ -137,10 +135,3 @@ class Terminal:
         cwd: str = get_command_output(self.rp, "pwd")[0].strip()
         prefix = f"{cwd}> "
         return self.session.prompt(HTML(f"{prefix}"))
-
-    def keepalive(self) -> None:
-        """Keep the connection alive by sending a repeat no-op command."""
-        while True:
-            ps = psrp.SyncPowerShell(self.rp)
-            ps.add_script("").invoke()
-            time.sleep(60)
