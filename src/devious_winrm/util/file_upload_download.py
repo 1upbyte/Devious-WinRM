@@ -13,6 +13,7 @@ from prompt_toolkit.shortcuts import ProgressBar
 from prompt_toolkit.shortcuts.progress_bar import formatters
 from psrp import PSRPError, SyncPowerShell, SyncPSDataCollection, SyncRunspacePool
 
+from devious_winrm.util.get_command_output import get_command_output
 from devious_winrm.util.misc import get_pwsh_script
 
 pb_format = [
@@ -61,7 +62,7 @@ def copy_file(
                 sha1.update(data)
                 progress.items_completed += len(data)
                 yield data
-
+            progress.done = True
         yield sha1.hexdigest().encode("utf-8")
 
     ps = SyncPowerShell(rp)
@@ -110,19 +111,31 @@ def fetch_file(
             BufferSize=rp.max_payload_size,
         )
 
+        file = get_command_output(rp, f"Get-Item {src} | Out-String")
+        if not file or not file[0]:
+            ps.invoke() # An invalid file will raise an error
+        file_size = get_command_output(rp, f"(Get-Item {src}).Length | Out-String")[0]
+        file_size = int(file_size)
+
         out = SyncPSDataCollection[t.Any]()
         temp_file = Path(temp_dir, "psrp-fetch-temp")
-        with temp_file.open(mode="wb") as temp_fd:
+        with temp_file.open(mode="wb") as temp_fd,\
+            ProgressBar(formatters=pb_format) as pb:
+
+            progress = pb(total=file_size, remove_when_done=True)
+
             sha1 = hashlib.sha1()
 
             def on_data(data: bytes | str) -> None:
                 if isinstance(data, bytes):
                     sha1.update(data)  # type: ignore[has-type] # Nested func is problematic
                     temp_fd.write(data)  # type: ignore[has-type] # Ditto above
+                    progress.items_completed += len(data)
+
 
             out.data_added += on_data
             ps.invoke(output_stream=out)
-
+            progress.done = True
         expected_file_hash = out[-1]
         actual_file_hash = sha1.hexdigest()
         if actual_file_hash != expected_file_hash:
