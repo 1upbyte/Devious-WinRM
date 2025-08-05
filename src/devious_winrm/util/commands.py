@@ -90,7 +90,7 @@ def upload(self: Terminal, args: list[str]) -> None | bool:
         action="store_true",
         help="overwrite the existing file if it exists (Default: False).",
     )
-    parser.add_argument(dest="destination", type=str, nargs="?",
+    parser.add_argument(dest="destination", type=str, nargs="?", default=".",
                         help="prepend with a $ to store the file"
                         " in a variable instead of on disk")
     try:
@@ -103,7 +103,7 @@ def upload(self: Terminal, args: list[str]) -> None | bool:
         return None
     try:
         local_path: Path = Path(parsed_args.local_path)
-        destination: str = parsed_args.destination or local_path.name
+        destination: str = parsed_args.destination
         overwrite: bool = parsed_args.overwrite
         final_dest = copy_file(self.rp, local_path, destination, overwrite=overwrite)
         print_info(f"Uploaded {local_path} to {final_dest}")

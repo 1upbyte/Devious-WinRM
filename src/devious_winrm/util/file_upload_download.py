@@ -77,6 +77,7 @@ def copy_file(
         ps.add_script(get_pwsh_script("copy.ps1"))
         ps.add_parameter("Path", dest)
         ps.add_parameter("Overwrite", overwrite)
+        ps.add_parameter("FileName", src.name)
 
     output = ps.invoke(
         input_data=read_buffer(src_path, rp.max_payload_size),

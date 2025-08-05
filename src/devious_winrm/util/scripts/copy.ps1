@@ -13,7 +13,11 @@ param (
     
     [Parameter()]
     [switch]
-    $Overwrite
+    $Overwrite,
+
+    [Parameter()]
+    [string]
+    $FileName
 )
 
 begin {
@@ -31,6 +35,10 @@ begin {
     # the current location.
     $Path = [System.Environment]::ExpandEnvironmentVariables($Path)
     $Path = $ExecutionContext.SessionState.Path.GetUnresolvedProviderPathFromPSPath($Path)
+    if (Test-Path -LiteralPath $Path -PathType Container) {
+        $Path = Join-Path -Path $Path -ChildPath $FileName
+    }
+    
     $parentDir = Split-Path -Path $Path -Parent
     if (-not (Test-Path -LiteralPath $parentDir)) {
         throw "Target path directory '$parentDir' does not exist"
