@@ -119,6 +119,11 @@ def download(self: Terminal, args: list[str]) -> None:
     """Download a file. Use --help for usage."""
     epilog = "Large files may struggle to transfer."
     parser = argparse.ArgumentParser("download", exit_on_error=False, epilog=epilog)
+    parser.add_argument(
+        "-o", "--overwrite",
+        action="store_true",
+        help="overwrite the existing file if it exists (Default: False).",
+    )
     parser.add_argument("remote_path", type=str)
     parser.add_argument("local_path", type=str, nargs="?")
     try:
@@ -133,7 +138,8 @@ def download(self: Terminal, args: list[str]) -> None:
     try:
         remote_path: str = parsed_args.remote_path
         local_path: Path = Path(parsed_args.local_path or remote_path.split("\\")[-1])
-        final_path = fetch_file(self.rp, remote_path, local_path)
+        overwrite: bool = parsed_args.overwrite
+        final_path = fetch_file(self.rp, remote_path, local_path, overwrite=overwrite)
         print_info(f"Downloaded {remote_path} to {final_path}")
     except FileNotFoundError:
         print_error(f"No such file or directory: {local_path}")

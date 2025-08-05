@@ -91,6 +91,8 @@ def fetch_file(
     rp: SyncRunspacePool,
     src: str,
     dest: Path,
+    *_: t.Never,
+    overwrite: bool = False,
 ) -> Path:
     """Fetch a file from the remote connection.
 
@@ -103,13 +105,18 @@ def fetch_file(
         rp: An opened Runspace Pool.
         src: The remote path to copy from.
         dest: The destination path to copy the file to.
+        overwrite: Overwrite the destination file.
 
     Returns:
         Path: The absolute path to the local destination
         that the remote file was fetched to.
 
     """
-    dest_path = dest
+    dest_path = dest.expanduser()
+
+    if not overwrite and dest_path.exists():
+        error = f"Target file '{dest_path}' already exists"
+        raise FileExistsError(error)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         ps = SyncPowerShell(rp)
