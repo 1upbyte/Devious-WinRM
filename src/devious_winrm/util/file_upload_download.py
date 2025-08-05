@@ -28,6 +28,8 @@ def copy_file(
     rp: SyncRunspacePool,
     src: Path,
     dest: str,
+    *_: t.Never,
+    overwrite: bool = False,
 ) -> str:
     """Copy a file to the remote connection.
 
@@ -45,6 +47,7 @@ def copy_file(
         dest: The destination path to copy the file to. This must be a string
             and relative paths are resolved from the current location of the
             connection which is based on the connection type.
+        overwrite: Overwrite the destination file.
 
     Returns:
         str: The absolute path to the remote destination that the local file
@@ -72,7 +75,8 @@ def copy_file(
         ps.add_parameter("variableName", dest[1:])
     else:
         ps.add_script(get_pwsh_script("copy.ps1"))
-        ps.add_parameters(Path=dest)
+        ps.add_parameter("Path", dest)
+        ps.add_parameter("Overwrite", overwrite)
 
     output = ps.invoke(
         input_data=read_buffer(src_path, rp.max_payload_size),

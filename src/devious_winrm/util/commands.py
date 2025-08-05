@@ -85,6 +85,11 @@ def upload(self: Terminal, args: list[str]) -> None | bool:
     epilog = "Large files may struggle to transfer."
     parser = argparse.ArgumentParser("upload", exit_on_error=False, epilog=epilog)
     parser.add_argument("local_path", type=str)
+    parser.add_argument(
+        "-o", "--overwrite",
+        action="store_true",
+        help="overwrite the existing file if it exists (Default: False).",
+    )
     parser.add_argument(dest="destination", type=str, nargs="?",
                         help="prepend with a $ to store the file"
                         " in a variable instead of on disk")
@@ -99,7 +104,8 @@ def upload(self: Terminal, args: list[str]) -> None | bool:
     try:
         local_path: Path = Path(parsed_args.local_path)
         destination: str = parsed_args.destination or local_path.name
-        final_dest = copy_file(self.rp, local_path, destination)
+        overwrite: bool = parsed_args.overwrite
+        final_dest = copy_file(self.rp, local_path, destination, overwrite=overwrite)
         print_info(f"Uploaded {local_path} to {final_dest}")
     except FileNotFoundError:
         print_error(f"No such file or directory: {local_path}")

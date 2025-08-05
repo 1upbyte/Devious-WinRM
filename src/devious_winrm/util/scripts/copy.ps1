@@ -9,7 +9,11 @@ param (
 
     [Parameter(ValueFromPipeline = $true)]
     [byte[]]
-    $InputObject
+    $InputObject,
+    
+    [Parameter()]
+    [switch]
+    $Overwrite
 )
 
 begin {
@@ -31,6 +35,11 @@ begin {
     if (-not (Test-Path -LiteralPath $parentDir)) {
         throw "Target path directory '$parentDir' does not exist"
     }
+    if (-not $Overwrite -and (Test-Path -LiteralPath $Path)) {
+        throw "Target file '$Path' already exists"
+    }
+
+
 
     $bindingFlags = [System.Reflection.BindingFlags]'NonPublic, Instance'
     Function Get-Property {
