@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING
 
 import psrp
 
+from devious_winrm.util.bypass_amsi import bypass_amsi as bypass_amsi_func
 from devious_winrm.util.file_upload_download import copy_file, fetch_file
 from devious_winrm.util.get_command_output import get_command_output
 from devious_winrm.util.invoke_in_memory import invoke_in_memory
@@ -180,3 +181,8 @@ def invoke(self: Terminal, args: list[str]) -> None:
             return # Errors will be printed by upload()
 
     invoke_in_memory(self.rp, var_name, parsed_args.args)
+
+@command
+def bypass_amsi(self: Terminal, _args: list[str]) -> None:
+    """Bypass the Antimalware Scan Interface (AMSI)."""
+    bypass_amsi_func(self.rp)
