@@ -16,6 +16,7 @@ if TYPE_CHECKING:
 
     from devious_winrm.app import Terminal
 import argparse
+import hashlib
 from pathlib import Path
 
 commands = {}
@@ -169,14 +170,18 @@ def invoke(self: Terminal, args: list[str]) -> None:
     except SystemExit: # --help raises SystemExit
         return
 
-    var_name = Path(parsed_args.local_path).name
+    local_path = Path(parsed_args.local_path)
+    with local_path.open("rb") as f:
+        file_bytes = f.read()
+        sha256_hash = hashlib.sha256(file_bytes).hexdigest()
 
-    cached = get_command_output(self.rp, f"Get-Variable {var_name}")
+    var_name = sha256_hash[:7]
+    cached = get_command_output(self.rp, f"Get-Variable {var_name}", error_ok=True)
 
     if cached and cached[0] and not parsed_args.no_cache:
         print_info("Using cached binary.")
     else:
-        success = upload(self, [parsed_args.local_path, f"${var_name}"])
+        success = upload(self, [str(local_path), f"${var_name}"])
         if not success:
             return # Errors will be printed by upload()
 
