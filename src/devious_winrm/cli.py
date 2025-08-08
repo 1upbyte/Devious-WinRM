@@ -5,10 +5,9 @@ import httpcore
 import psrp
 import typer
 from impacket.krb5.kerberosv5 import KerberosError
-from psrp import SyncRunspacePool
+from psrp import SyncRunspacePool, WSManInfo
 
 from devious_winrm.app import Terminal
-from devious_winrm.psrp_fix._connection.wsman import WSManInfoFix as WSManInfo
 from devious_winrm.util.kerberos import prepare_kerberos
 from devious_winrm.util.printers import print_error, print_ft, print_info
 
@@ -78,7 +77,9 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
             username=username,
             password=password,
             port=port,
-            auth=auth)
+            auth=auth,
+            read_timeout=500, # A command timing out is difficult to recover.
+            )
         with SyncRunspacePool(conn, max_runspaces=5) as rp:
             terminal = Terminal(conn, rp)
             terminal.run()

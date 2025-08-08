@@ -10,10 +10,10 @@ requires-python = ">=3.10"
 dependencies = [
     "prompt_toolkit>=3.0.5",
     "impacket==0.12.0",
-    "pypsrp[kerberos]>=1.0.0b1",
     "Pygments>=2.19.1",
     "rich>=14.0.0",
-    "typer>=0.16.0"
+    "typer>=0.16.0",
+    "pypsrp[kerberos]@git+https://github.com/1upbyte/devious-pypsrp",
 ]
 
 [project.scripts]
@@ -38,4 +38,3 @@ lint.select = ["ALL"]
 lint.pyupgrade.keep-runtime-typing = true
 lint.ignore = ["RUF013", "PERF203", "INP001"]
 lint.pylint.allow-magic-value-types = ["int", "str"]
-extend-exclude = ["psrp_fix"]

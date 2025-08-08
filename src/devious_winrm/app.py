@@ -111,7 +111,7 @@ class Terminal:
             self.ps.streams.error.data_added = print_error
             try:
                 self.ps.invoke(output_stream=output)
-            except psrp.PipelineFailed as e:
+            except (psrp.PipelineFailed, psrp.PSRPError) as e:
                 print_error(e)
             except ParseError:
                 print_error("Command failed: Invalid character in command.")
