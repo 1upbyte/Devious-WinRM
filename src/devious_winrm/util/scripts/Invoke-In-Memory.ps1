@@ -2,11 +2,10 @@
 # Executes a .NET assembly stored in the $bin variable (byte array) in memory
 
 param (
-    [Parameter()]
-    [string]$Arguments = "",
-
     [Parameter(Mandatory = $true)]
-    [string]$VariableName
+    [string]$VariableName,
+
+    [string[]]$Arguments = @()
 )
 
 $outputWriter = New-Object System.IO.StringWriter
@@ -14,16 +13,10 @@ $errorWriter = New-Object System.IO.StringWriter
 [Console]::SetOut($outputWriter)
 [Console]::SetError($errorWriter)
 
-$args = $Arguments.split(",")
-
-if ([string]::IsNullOrEmpty($args)) {
-    # If there are no arguments, create an empty string array.
-    $args = [string[]]@()
-}
 $bin = (Get-Variable $VariableName).Value
 $assembly = [System.Reflection.Assembly]::Load($bin)
 $entryPoint = $assembly.EntryPoint
-$invocationArgs = , $args
+$invocationArgs = , $Arguments
 
 $entryPoint.Invoke($null, $invocationArgs)
 

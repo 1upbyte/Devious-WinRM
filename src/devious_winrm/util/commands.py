@@ -160,7 +160,7 @@ def invoke(self: Terminal, args: list[str]) -> None:
         help="re-upload the binary instead of using the cached copy (Default: False).",
     )
     parser.add_argument("args", nargs=argparse.REMAINDER,
-                        help="comma separated arguments to pass to the binary.")
+                        help="arguments to pass to the binary.")
     try:
             parsed_args = parser.parse_args(args)
     except argparse.ArgumentError as e:

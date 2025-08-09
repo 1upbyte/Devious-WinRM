@@ -15,7 +15,7 @@ def invoke_in_memory(rp: psrp.SyncRunspacePool, var_name: str, args: list[str]) 
     ps.add_script(script)
     ps.add_parameter("VariableName", var_name)
     if args:
-        ps.add_parameter("Arguments", " ".join(args))
+        ps.add_argument(args)
     ps.add_command("Out-String").add_parameter("Stream", value=True)
 
     output = psrp.SyncPSDataCollection()
