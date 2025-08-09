@@ -1,6 +1,7 @@
 """File to define commands."""
 from __future__ import annotations
 
+import importlib.resources
 from typing import TYPE_CHECKING
 
 import psrp
@@ -184,10 +185,65 @@ def invoke(self: Terminal, args: list[str]) -> None:
         success = upload(self, [str(local_path), f"${var_name}"])
         if not success:
             return # Errors will be printed by upload()
-
     invoke_in_memory(self.rp, var_name, parsed_args.args)
 
 @command
 def bypass_amsi(self: Terminal, _args: list[str]) -> None:
     """Bypass the Antimalware Scan Interface (AMSI)."""
     bypass_amsi_func(self.rp)
+
+@command
+def localexec(self: Terminal, args: list[str]) -> None:
+    """Run a command with a local token. Use --help for usage."""
+    desc = "Run a command with a local token. This is useful for commands such as\
+        'Get-Service' which usually do not work via WinRM.\
+        Uses RunasCs from github/antonioCoco under the hood."
+    parser = argparse.ArgumentParser("localexec", exit_on_error=False, description=desc)
+    parser.add_argument("command", help="the command to run. Does not need quotes\
+                        even with arguments and spaces.")
+    parser.add_argument("-t", "--timeout", default=120000, help="the waiting time (in\
+                         ms)for the created process. This will halt RunasCs until the\
+                        spawned process ends and sent the output back to the caller.\
+                        If you set 0 no output will be retrieved and a background\
+                        process will be created. Default: 120000 (2 minutes).")
+    parser.add_argument("-n", "--no-powershell", action="store_true",
+                        help="prevent commands from being wrapped with\
+                            'powershell -c <command>'.")
+    parser.add_argument("args", nargs=argparse.REMAINDER,
+                        help=argparse.SUPPRESS) # The 'command' argument includes args.
+    try:
+        parsed_args = parser.parse_args(args)
+    except argparse.ArgumentError as e:
+        print_error(e)
+        print_error("Use --help for usage details.")
+        return
+    except SystemExit: # --help raises SystemExit
+        return
+
+    command: str = parsed_args.command
+    command_args: list[str] = parsed_args.args
+    timeout: int = parsed_args.timeout
+    no_powershell: bool = parsed_args.no_powershell
+
+    invocation_args = []
+
+    bin_path = "devious_winrm.util.binaries"
+    runascs_path = str(importlib.resources.files(bin_path).joinpath("RunasCs.exe"))
+    invocation_args.append(runascs_path)
+
+    invocation_args.append("x") # Username doesn't matter for logon_type 9
+    invocation_args.append("x") # Password doesn't matter for logon_type 9
+
+    if command_args:
+        command +=  " " + " ".join(parsed_args.args)
+    if not no_powershell:
+        command = f'powershell -c "{command}"'
+    invocation_args.append(command)
+
+    invocation_args.append("--logon-type")
+    invocation_args.append("9") # Local logon type. Refer to RunasCs.exe --help
+    invocation_args.append("--timeout")
+    invocation_args.append(str(timeout))
+
+    invoke(self, invocation_args)
+
