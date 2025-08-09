@@ -15,7 +15,7 @@ ANSI_RESET = "\033[0m"
 
 def print_ft(message: str | PSString) -> None:
     """Print formatted text to the terminal."""
-    print_formatted_text(ANSI(message))
+    print_formatted_text(ANSI(message.strip()))
 
 def print_error(message: ErrorRecord) -> None:
     """Print an error message to the terminal."""
