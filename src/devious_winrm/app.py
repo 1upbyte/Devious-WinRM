@@ -17,7 +17,7 @@ from psrpcore.types import PSInvocationState
 from pygments.lexers.shell import PowerShellLexer
 
 from devious_winrm.util.commands import commands, run_command
-from devious_winrm.util.completers import RemotePathAutoCompleter
+from devious_winrm.util.completers import DeviousCompleter
 from devious_winrm.util.get_command_output import get_command_output
 from devious_winrm.util.keybinds import kb
 from devious_winrm.util.printers import print_error, print_ft, print_info
@@ -45,7 +45,7 @@ class Terminal:
             key_bindings=kb,
             complete_while_typing=False,
             complete_style=CompleteStyle.READLINE_LIKE,
-            completer=RemotePathAutoCompleter(rp=self.rp),
+            completer=DeviousCompleter(rp=self.rp),
             color_depth=ColorDepth.DEPTH_24_BIT,
         )
 
