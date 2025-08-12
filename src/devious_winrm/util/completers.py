@@ -13,10 +13,8 @@ from prompt_toolkit.completion import (
     Completer,
     Completion,
     PathCompleter,
-    merge_completers,
 )
 from prompt_toolkit.document import Document
-from prompt_toolkit.shortcuts import CompleteStyle
 
 from devious_winrm.util.get_command_output import get_command_output
 
@@ -27,8 +25,8 @@ class DeviousCompleter(Completer):
     def __init__(self, rp: psrp.SyncRunspacePool) -> None:
         """Initialize the main completer."""
         self.remote_completer = RemotePathCompleter(rp)
-        self.path_completer = PathCompleter()
-        self.completer_map = {
+        self.path_completer = LocalPathCompleter()
+        self.completer_map: dict[str, dict[str, int | Completer]] = {
             "upload": {"completer": self.path_completer, "arg": 1},
             "invoke": {"completer": self.path_completer, "arg": 1},
             "download": {"completer": self.path_completer, "arg": 2},
@@ -42,15 +40,10 @@ class DeviousCompleter(Completer):
         words = document.text_before_cursor.split(" ")
         if words:
             command = words[0]
-            # The number words should be the arg index that needs the completion
-            # plus 1 to account for the command itself.
-            if self.completer_map.get(command):
-                arg_needing_completer = self.completer_map.get(command).get("arg")
-                if len(words) == arg_needing_completer + 1:
-                    completer = self.completer_map.get("completer", self.remote_completer)
-
-                document = Document(words[arg_needing_completer])
-        # Yield completions from the chosen completer
+            command_map = self.completer_map.get(command, {})
+            # Check that we are on the correct arg that needs a different completer
+            if len(words) == command_map.get("arg", -1) + 1:
+                completer = command_map.get("completer", completer)
         yield from completer.get_completions(document, event)
 
 class RemotePathCompleter(Completer):
@@ -62,7 +55,11 @@ class RemotePathCompleter(Completer):
         super().__init__()
 
 
-    def get_completions(self, document: Document, _: CompleteEvent) -> Iterator[Completion]:  # noqa: E501
+    def get_completions(
+            self,
+            document: Document,
+            _: CompleteEvent,
+        ) -> Iterator[Completion]:
         """Return the available paths."""
         path = document.get_word_before_cursor(WORD=True).replace("\\", "/")
 
@@ -105,7 +102,26 @@ class RemotePathCompleter(Completer):
                 completion = f'"{completion}"'
             if drive_letter_path:
                 completion = f"\\{completion}"
-            yield Completion(completion,
-                             start_position=-len(prefix))
+            yield Completion(completion, start_position=-len(prefix))
+
+class LocalPathCompleter(Completer):
+    """Completes local file system paths using only the last word before the cursor."""
+
+    def __init__(self) -> None:
+        """Initialize the LocalPathCompleter."""
+        self.path_completer = PathCompleter(expanduser=True)
+
+    def get_completions(
+        self,
+        document: Document,
+        complete_event: CompleteEvent,
+    ) -> Iterator[Completion]:
+        """Complete local paths using only the last word before the cursor position."""
+        prefix = document.get_word_under_cursor(WORD=True)
+        # Calculate the relative cursor position within the last word
+        rel_cursor_pos = document.cursor_position - (len(document.text_before_cursor) - len(prefix))  # noqa: E501
+        temp_doc = Document(prefix, cursor_position=max(0, rel_cursor_pos))
+
+        yield from self.path_completer.get_completions(temp_doc, complete_event)
 
 
