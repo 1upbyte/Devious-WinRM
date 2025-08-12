@@ -171,8 +171,8 @@ def localexec(self: Terminal, args: list[str]) -> None:
         'Get-Service' which usually do not work via WinRM.\
         Uses RunasCs from github/antonioCoco under the hood."
     parser = argparse.ArgumentParser("localexec", exit_on_error=False, description=desc)
-    parser.add_argument("command", help="the command to run. Does not need quotes\
-                        even with arguments and spaces.")
+    parser.add_argument("command", nargs=argparse.REMAINDER, help="the command to run.\
+                         Does not need quotes even with arguments and spaces.")
     parser.add_argument("-t", "--timeout", default=120000, help="the waiting time (in\
                          ms)for the created process. This will halt RunasCs until the\
                         spawned process ends and sent the output back to the caller.\
@@ -181,8 +181,6 @@ def localexec(self: Terminal, args: list[str]) -> None:
     parser.add_argument("-n", "--no-powershell", action="store_true",
                         help="prevent commands from being wrapped with\
                             'powershell -c <command>'.")
-    parser.add_argument("args", nargs=argparse.REMAINDER,
-                        help=argparse.SUPPRESS) # The 'command' argument includes args.
     try:
         parsed_args = parser.parse_args(args)
     except argparse.ArgumentError as e:
@@ -192,8 +190,7 @@ def localexec(self: Terminal, args: list[str]) -> None:
     except SystemExit: # --help raises SystemExit
         return
 
-    command: str = parsed_args.command
-    command_args: list[str] = parsed_args.args
+    command: str = " ".join(parsed_args.command)
     timeout: int = parsed_args.timeout
     no_powershell: bool = parsed_args.no_powershell
 
@@ -206,10 +203,8 @@ def localexec(self: Terminal, args: list[str]) -> None:
     invocation_args.append("x") # Username doesn't matter for logon_type 9
     invocation_args.append("x") # Password doesn't matter for logon_type 9
 
-    if command_args:
-        command +=  " " + " ".join(parsed_args.args)
     if not no_powershell:
-        command = f'powershell -c "{command}"'
+        command = f"powershell -c {command}"
     invocation_args.append(command)
 
     invocation_args.append("--logon-type")
