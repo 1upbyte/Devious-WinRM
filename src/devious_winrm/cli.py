@@ -1,4 +1,5 @@
 """Entry point for the CLI application."""
+import importlib
 from typing import Annotated
 
 import httpcore
@@ -13,8 +14,10 @@ from devious_winrm.util.printers import print_error, print_ft, print_info
 
 LM_HASH: str = "aad3b435b51404eeaad3b435b51404ee"
 
+VERSION = importlib.metadata.version("devious_winrm")
+
 print_ft("")
-print_info("Devious-WinRM v1.1.0 by 1upbyte")
+print_info(f"Devious-WinRM v{VERSION} by 1upbyte")
 
 
 desc = {}
@@ -26,7 +29,7 @@ desc["kerberos"] = ("Kerberos authentication. If no username is provided,"
 desc["nt_hash"] = ("NTLM Hash. Accepts both LM:NTLM or just NTLM."
     " Cannot be used with password.")
 desc["dc"] = ("FQDN for the domain controller."
-    " Required for Kerberos authentication.")
+    " Useful for Kerberos authentication.")
 
 flags = {}
 flags["username"] = typer.Option("-u", "--username", help=desc["username"])
