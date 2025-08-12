@@ -1,6 +1,6 @@
 [project]
 name = "Devious-WinRM"
-version = "1.1.1"
+version = "1.2.0"
 description = "A Pentester's Powershell Client."
 readme = "README.md"
 authors = [
@@ -13,7 +13,7 @@ dependencies = [
     "Pygments>=2.19.1",
     "rich>=14.0.0",
     "typer>=0.16.0",
-    "pypsrp[kerberos]@git+https://github.com/1upbyte/devious-pypsrp",
+    "devious-pypsrp[kerberos]",
 ]
 
 [project.scripts]
