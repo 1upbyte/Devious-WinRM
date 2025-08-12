@@ -42,34 +42,6 @@ def command(func: Callable) -> Callable:
     }
     return func
 
-def run_command(self: Terminal, user_input: str) -> None:
-    """Run a command by looking it up in the dictionary and invoking its action.
-
-    Args:
-        self (Terminal): The terminal instance on which the command is executed.
-        user_input (str): The command to execute.
-
-    Raises:
-        KeyError: If the specified command is not found in the commands dictionary.
-
-    Notes:
-        If the command is not found, a message is printed to inform
-        the user and suggest typing 'help' for a list of available commands.
-
-    """
-    input_array: list[str] = user_input.split(" ")
-    if len(input_array) == 0:
-         return
-    cmd: str = user_input.split(" ")[0]
-    args: list[str] = input_array[1:] if len(input_array) > 1 else []
-    try:
-        commands[cmd]["action"](self, args)
-    except KeyError:
-        print_error(
-            f"Command '{cmd}' not found. Type 'help' for a list of commands.",
-        )
-
-
 @command
 def exit(_self: Terminal, _args: str) -> None:  # noqa: A001
     """Exit the application."""

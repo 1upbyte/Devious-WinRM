@@ -16,7 +16,7 @@ from psrp import WSManInfo
 from psrpcore.types import PSInvocationState
 from pygments.lexers.shell import PowerShellLexer
 
-from devious_winrm.util.commands import commands, run_command
+from devious_winrm.util.commands import commands
 from devious_winrm.util.completers import DeviousCompleter
 from devious_winrm.util.get_command_output import get_command_output
 from devious_winrm.util.keybinds import kb
@@ -98,7 +98,8 @@ class Terminal:
 
         def _process_input_logic() -> None:
             if cmd in commands:
-                run_command(self, user_input)
+                args: list[str] = user_input.split()[1:]
+                commands[cmd]["action"](self, args)
                 return
 
             """Logic to process user input and execute commands."""
