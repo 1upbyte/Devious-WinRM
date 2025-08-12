@@ -101,7 +101,7 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
         print_error(error)
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
-app.command()(cli)
+app.command(help="")(cli)
 
 if __name__ == "__main__":
     app()
