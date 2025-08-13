@@ -1,4 +1,5 @@
 """Entry point for the CLI application."""
+import importlib
 from typing import Annotated
 
 import httpcore
@@ -19,8 +20,10 @@ from devious_winrm.util.printers import print_error, print_ft, print_info
 
 LM_HASH: str = "aad3b435b51404eeaad3b435b51404ee"
 
+VERSION = importlib.metadata.version("devious_winrm")
+
 print_ft("")
-print_info("Devious-WinRM by 1upbyte")
+print_info(f"Devious-WinRM v{VERSION} by 1upbyte")
 
 
 desc = {}
@@ -32,7 +35,7 @@ desc["kerberos"] = ("Kerberos authentication. If no username is provided,"
 desc["nt_hash"] = ("NTLM Hash. Accepts both LM:NTLM or just NTLM."
     " Cannot be used with password.")
 desc["dc"] = ("FQDN for the domain controller."
-    " Required for Kerberos authentication.")
+    " Useful for Kerberos authentication.")
 
 flags = {}
 flags["username"] = typer.Option("-u", "--username", help=desc["username"])
@@ -83,23 +86,16 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
             username=username,
             password=password,
             port=port,
-            auth=auth)
-
-        with SyncRunspacePool(conn) as rp:
-            session = PromptSession(
-                lexer=PygmentsLexer(PowerShellLexer),
-                refresh_interval=1,
-                key_bindings=kb,
-                complete_while_typing=False,
-                complete_style=CompleteStyle.READLINE_LIKE,
-                completer=RemotePathAutoCompleter(rp=rp),
+            auth=auth,
+            read_timeout=500, # A command timing out is difficult to recover.
             )
-            terminal = Terminal(conn, rp, session)
+        with SyncRunspacePool(conn, max_runspaces=5) as rp:
+            terminal = Terminal(conn, rp)
             terminal.run()
     except psrp.WSManAuthenticationError:
         error = "Authentication failed. Please check your credentials and try again."
         print_error(error)
-    except (httpcore.ReadError, httpcore.ConnectionNotAvailable):
+    except (httpcore.ReadError, httpcore.ConnectionNotAvailable, httpcore.ReadTimeout):
         error = "Connection timed out."
         print_error(error)
     except httpcore.ConnectError as err:
@@ -114,7 +110,7 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
         print_error(error)
 
 app = typer.Typer(context_settings={"help_option_names": ["-h", "--help"]})
-app.command()(cli)
+app.command(help="")(cli)
 
 if __name__ == "__main__":
     app()

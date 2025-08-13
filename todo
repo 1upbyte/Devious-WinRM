@@ -1,0 +1,8 @@
+- Ctrl +C does not stop printing (kill thread?)
+- Catch READLINE errors on color
+- Copy copies to Documents folder always
+- PipelineFailed on variable name + /
+- ctrl +C does not cancel a binary being executed
+- httpcore.readtimeout
+
+

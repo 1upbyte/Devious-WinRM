@@ -18,25 +18,38 @@ Under the hood, Devious-WinRM is not directly based on WinRM. It is instead buil
 - [x] Syntax highlighting
 - [x] Ctrl+C command interupt
 - [x] Remote path completion
+- [x] In-Memory .NET loader
+- [x] Local logon token upgrader via RunasCs 
+- [ ] In-Memory Powershell loader
 - [ ] Certificate auth
 - [ ] SSL auth
 - [ ] Logging
-- [ ] In-Memory .NET/Powershell loader
-- [ ] Maybe: Local logon token upgrader via RunasCs 
 
 
 ## Installation
-On Linux, Kerberos needs to be installed: `sudo apt install gcc python3-dev libkrb5-dev krb5-pkinit`
+0 - Install Kerberos (Linux only)
 
-The recommended installation method is with [uv](https://github.com/astral-sh/uv). Check out their [docs](https://docs.astral.sh/uv/getting-started/installation/) for how to install it, then run:
+```bash
+sudo apt install gcc python3-dev libkrb5-dev krb5-pkinit
+```
 
-`uv tool install devious-winrm --prerelease=allow`
+1 - Install Devious-WinRM
 
-Alternatively, use pipx or pip:
+```bash
+uv tool install devious-winrm
+```
+or
+```bash
+pipx install devious-winrm
+```
 
-`pipx install devious-winrm`
 
-`pip install devious-winrm`
+Sample usage:
+```ps1
+dwrm ws01.example.com -u 1upbyte -p supersecret123 -k --dc dc01.example.com
+```
+
+Check out the [Installation Guide](https://github.com/1upbyte/Devious-WinRM/wiki/Installation-Guide) for more technical information along with help for other distros.
 
 ## Contributing
 Thanks for taking an interest in contributing! Developing features for Devious-WinRM requires some extra dependencies for linting and testing. Here are the general steps to a dev environment:
@@ -54,3 +67,4 @@ Once your contribution is complete, run `ruff check` and `pytest` against it, us
 - [Evil-WinRM](https://github.com/Hackplayers/evil-winrm)  - This goes without saying, but Evil-WinRM is an incredible tool. It was the primary inspiration for this project.
 - [pypsrp](https://github.com/jborean93/pypsrp) - A tremendously well-featured library for Powershell Remote in Python. Super friendly developer as well!
 - [evil-winrm-py](https://github.com/adityatelange/evil-winrm-py) - Aditya and I had the same idea at almost the exact same time. I would be remissed if I didn't mention his project as well.
+- [RunasCs](https://github.com/antonioCoco/RunasCs) - Used for the local token upgrader. Super useful tool when doing work over WinRM.

