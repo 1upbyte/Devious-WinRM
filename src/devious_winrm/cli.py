@@ -57,7 +57,7 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
         if len(nt_hash) != 32:
             error = "NTLM hash must be 32 characters long."
             raise typer.BadParameter(error)
-        if kerberos:
+        if not kerberos:
             password = f"{LM_HASH}:{nt_hash}"
 
     if dc is not None and dc.count(".") < 2:
