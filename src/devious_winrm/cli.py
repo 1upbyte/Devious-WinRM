@@ -6,7 +6,8 @@ import httpcore
 import psrp
 import typer
 from impacket.krb5.kerberosv5 import KerberosError
-from psrp import SyncRunspacePool, WSManInfo
+from psrp import SyncRunspacePool, WSManFault, WSManInfo
+from spnego.exceptions import SpnegoError
 
 from devious_winrm.app import Terminal
 from devious_winrm.util.kerberos import prepare_kerberos
@@ -92,11 +93,12 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
     except (httpcore.ReadError, httpcore.ConnectionNotAvailable, httpcore.ReadTimeout):
         error = "Connection timed out."
         print_error(error)
-    except httpcore.ConnectError as err:
+    except (httpcore.ConnectError, httpcore.TimeoutException) as err:
         error = f"Connection error: {err}"
         print_error(error)
     except (OSError, FileNotFoundError, ValueError,
-            NotImplementedError, KerberosError) as err:
+            NotImplementedError, KerberosError, WSManFault,
+            SpnegoError) as err:
         print_error(err)
     except Exception as err:  # noqa: BLE001
         error = (f"Unexpected error occurred of type {err.__class__},"

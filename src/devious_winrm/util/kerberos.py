@@ -48,13 +48,18 @@ def has_cached_credential(realm: str) -> bool:
         server_valid = False
         expired = True
 
-        if ticket["expiration_time"] is None or ticket["server"] is None:
+        expiration_time = ticket["expiration_time"]
+        server = ticket["server"].lower()
+
+        if expiration_time is None or server is None:
             continue
-        if f"krbtgt/{realm}".lower() in ticket["server"].lower():
+        if f"krbtgt/{realm}".lower() in ticket["server"].lower() or \
+        ("http/" in server and realm.lower() in server):
             server_valid = True
         if datetime.now() < ticket["expiration_time"]:  # noqa: DTZ005
             expired = False
         if server_valid and not expired:
+            print_info(f"Using cached ticket with SPN: {server}")
             return True
     return False
 
@@ -94,7 +99,6 @@ def prepare_kerberos(
         is_cred_cached = False # Ignore cached credential if a username is provided
     else:
         is_cred_cached = has_cached_credential(realm)
-    print_info("Using Kerberos!")
     if os.name == "nt":
         if is_cred_cached:
             return
