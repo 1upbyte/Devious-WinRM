@@ -22,6 +22,10 @@ TLDR: `uv tool install devious-winrm`
 ## Wiki
 The [Usage Guide](https://github.com/1upbyte/Devious-WinRM/wiki/2-%E2%80%90-Usage-Guide) has extensive documentation on every single feature and command.
 
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=1upbyte/devious-winrm&type=date&legend=top-left)](https://www.star-history.com/#1upbyte/devious-winrm&type=date&legend=top-left)
+
 ## Credits
 - [Evil-WinRM](https://github.com/Hackplayers/evil-winrm)  - This goes without saying, but Evil-WinRM is an incredible tool. It was the primary inspiration for this project.
 - [pypsrp](https://github.com/jborean93/pypsrp) - A tremendously well-featured library for Powershell Remote in Python. Super friendly developer as well!
