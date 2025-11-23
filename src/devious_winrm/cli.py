@@ -87,8 +87,10 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
         with SyncRunspacePool(conn, max_runspaces=5) as rp:
             terminal = Terminal(conn, rp)
             terminal.run()
-    except psrp.WSManAuthenticationError:
+    except psrp.WSManAuthenticationError as err:
         error = "Authentication failed. Please check your credentials and try again."
+        if err.http_code == 401 and not kerberos:
+            error += "\nHint: NTLM authentication may be disabled. Try Kerberos."
         print_error(error)
     except (httpcore.ReadError, httpcore.ConnectionNotAvailable, httpcore.ReadTimeout):
         error = "Connection timed out."
@@ -102,7 +104,7 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
     except SpnegoError as err:
         print_error(err)
         if "Server not found in Kerberos database" in err.message:
-            error = ("\nPerhaps the DC's FQDN is not first in your hosts file?"
+            error = ("Hint: Perhaps the DC's FQDN is not first in your hosts file?"
             " See wiki for more info.")
             print_error(error)
     except Exception as err:  # noqa: BLE001
