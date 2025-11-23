@@ -97,9 +97,12 @@ def cli(host: Annotated[str, typer.Argument()],  # noqa: C901, PLR0912, PLR0913
         error = f"Connection error: {err}"
         print_error(error)
     except (OSError, FileNotFoundError, ValueError,
-            NotImplementedError, KerberosError, WSManFault,
-            SpnegoError) as err:
+            NotImplementedError, KerberosError, WSManFault) as err:
         print_error(err)
+    except SpnegoError as err:
+        print_error(err)
+        if "Server not found in Kerberos database" in err.message:
+            print_error("\nPerhaps the DC's FQDN is not first in your hosts file?")
     except Exception as err:  # noqa: BLE001
         error = (f"Unexpected error occurred of type {err.__class__},"
             f" please report it! \n{err}")
