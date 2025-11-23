@@ -18,7 +18,7 @@ LM_HASH: str = "aad3b435b51404eeaad3b435b51404ee"
 VERSION = importlib.metadata.version("devious_winrm")
 
 print_ft("")
-print_info(f"Devious-WinRM v{VERSION} by 1upbyte")
+print_info(f"Devious-WinRM v{VERSION} by Pablo Comino (@1upbyte)")
 
 
 desc = {}
