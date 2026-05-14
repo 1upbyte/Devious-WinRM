@@ -16,7 +16,7 @@ Any .NET binary can be ran directly in the Powershell process' memory using the 
 Some commands, such as `Get-Service` or `qwinsta` will fail to execute via WinRM due to a permission error. Devious-WinRM leverages RunasCs for an effortless way to get around this limitation of WinRM. Simply prepending the desired command with [localexec](https://github.com/1upbyte/Devious-WinRM/wiki/2-%E2%80%90-Usage-Guide#localexec) will work.
 
 ## Installation
-Check out the [Installation Guide](https://github.com/1upbyte/Devious-WinRM/wiki/Installation-Guide) for instructions.
+Check out the [Installation Guide](https://github.com/1upbyte/Devious-WinRM/wiki/1-%E2%80%90-Installation-Guide) for instructions.
 TLDR: `uv tool install devious-winrm`
 
 ## Wiki
