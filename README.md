@@ -1,23 +1,51 @@
 # Devious-WinRM
 
-A Pentester's Powershell Client.
+A Pentester's PowerShell Client.
 
 ![The help screen for Devious-WinRM, showing a variety of flags and options.](https://raw.githubusercontent.com/1upbyte/Devious-WinRM/refs/heads/main/assets/help-screen.png "Help screen")
 
 
-## Highlight Features
-### Zero-confing Kerberos
-Devious-WinRM's initial reason for creation was due to how complicated Kerberos auth can be. With Devious-WinRM, on most operating systems, it is as simple as appending the `-k` flag to the command line. Devious-WinRM will automatically handle the rest.
-
-### Easy in-memory .NET execution
-Any .NET binary can be ran directly in the Powershell process' memory using the [invoke](https://github.com/1upbyte/Devious-WinRM/wiki/2-%E2%80%90-Usage-Guide#invoke) command, usually **bypassing AV detection**. It's quick-and-easy way to covertly execute binaries without touching disk.
-
-### Local token upgrader
-Some commands, such as `Get-Service` or `qwinsta` will fail to execute via WinRM due to a permission error. Devious-WinRM leverages RunasCs for an effortless way to get around this limitation of WinRM. Simply prepending the desired command with [localexec](https://github.com/1upbyte/Devious-WinRM/wiki/2-%E2%80%90-Usage-Guide#localexec) will work.
+## Ruby Branch Status
+This branch is a Ruby reimplementation backed by the `winrm` gem. The current
+focus is CLI compatibility and Kerberos connection setup; the richer interactive
+commands from the Python implementation have not been ported yet.
 
 ## Installation
-Check out the [Installation Guide](https://github.com/1upbyte/Devious-WinRM/wiki/1-%E2%80%90-Installation-Guide) for instructions.
-TLDR: `uv tool install devious-winrm`
+Install the gem locally from this checkout:
+
+```sh
+gem build devious-winrm.gemspec
+gem install ./devious-winrm-*.gem
+```
+
+The `dwrm` and `devious-winrm` executables are provided by the gem.
+
+## Usage
+Kerberos is currently required:
+
+```sh
+dwrm -u C.Neri -p 'Zer0the0ne' -k dc01.vintage.htb
+```
+
+When username/password credentials are supplied on non-Windows systems,
+Devious-WinRM writes a temporary Kerberos config, runs `kinit`, and points the
+`winrm` gem at the resulting credential cache.
+
+Supported flags:
+
+```text
+Usage: dwrm [options] HOST
+
+Options:
+    -u, --username USER              Username used for authentication.
+    -p, --password PASS              Password used for authentication. Cannot be used with an NTLM hash.
+    -P, --port PORT                  Port of remote host. Defaults to 5985.
+    -k, --kerberos                   Use Kerberos authentication.
+    -H, --hash HASH                  NTLM hash. Accepts LM:NTLM or NTLM.
+        --domain-controller, --dc DC FQDN for the domain controller.
+    -v, --version                    Print version and exit.
+    -h, --help                       Print help and exit.
+```
 
 ## Wiki
 The [Usage Guide](https://github.com/1upbyte/Devious-WinRM/wiki/2-%E2%80%90-Usage-Guide) has extensive documentation on every single feature and command.

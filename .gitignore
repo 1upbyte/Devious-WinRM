@@ -214,3 +214,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+# Ruby source for this branch
+!lib/
+!lib/devious_winrm/
+!lib/devious_winrm/*.rb
