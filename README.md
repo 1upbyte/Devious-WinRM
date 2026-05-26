@@ -27,8 +27,16 @@ Kerberos is currently required:
 dwrm -u C.Neri -p 'Zer0the0ne' -k dc01.vintage.htb
 ```
 
+Kerberos pass-the-hash is also supported with an NT hash:
+
+```sh
+dwrm -u C.Neri -H CC5156663CD522D5FA1931F6684AF639 -k dc01.vintage.htb
+```
+
 When username/password credentials are supplied on non-Windows systems,
 Devious-WinRM writes a temporary Kerberos config, runs `kinit`, and points the
+`winrm` gem at the resulting credential cache. When an NT hash is supplied,
+Devious-WinRM uses impacket's `getTGT.py` to request a TGT and points the
 `winrm` gem at the resulting credential cache.
 
 Supported flags:
